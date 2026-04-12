@@ -1,30 +1,63 @@
+# -----------------------------------------------------------------------------
+# ORDER NOTIFICATION SERVICE
+# -----------------------------------------------------------------------------
+# In a microservices architecture, this file represents the Notification
+# Service. Its responsibility is to listen for new orders and notify the
+# customer, for example, by sending a confirmation email or an SMS.
+# It is one of several independent services that react to the same order event.
+# -----------------------------------------------------------------------------
+
 from confluent_kafka import Consumer
 import json
 
 consumer_config = {
     "bootstrap.servers": "localhost:9092",
-    # A 'group.id' identifies groups of consumers that are instances of the
-    # same application. This is useful in cases where an application has been
-    # scaled out to form a cluster. However, the work of consuming is
-    # distributed across the cluster, so each instance will consume a subset of
-    # the partitions in the topic.
 
+    # A "group.id" identifies a group of consumers that are instances of the
+    # same application. This is useful when an application has been scaled out
+    # to handle a high volume of messages. The work of consuming is distributed
+    # across the group, so each instance processes a subset of the partitions.
+    #
     # Analogy: A group of friends are eating dinner together.
-    # Each person is a consumer, and the group of friends is a consumer group.
-    # The dinner is the topic. Each person eats a subset of the dinner
-    # so that the task of finishing the meal is distributed across the group.
-    # The whole meal is consumed in the end.
+    # Each person is a consumer, and the group is the consumer group.
+    # The dinner is the topic. Each person eats a portion of the meal so that
+    # the task of finishing it is shared. The whole meal is consumed in the end.
+    #
+    # IMPORTANT: This consumer group ("order-notifiers") is different from the
+    # one used in consumer_order_inventory.py ("order-inventory"). This means
+    # that BOTH consumers will receive every message independently. This is the
+    # publish-subscribe pattern: one event, many independent reactions.
     "group.id": "order-notifiers",
 
-    # "auto.offset.reset" is used to specify what should be done when there is
-    # no initial offset in Kafka or if the current offset does not exist any more
-    # on the server (e.g., because that data has been deleted).
-    # "auto.offset.reset" options include:
-    ## 1. earliest: The consumer will start from the earliest offset in the partition.
-    ## 2. latest: The consumer will start from the latest offset in the partition.
-    ## 3. by_duration: Reset the offset to a configured <duration> from the current timestamp.
-    ## 4. none: Throw an exception to the consumer if no previous offset is found for the consumer's group.
-    "auto.offset.reset": "earliest"
+    # "auto.offset.reset" specifies where the consumer should start reading
+    # when there is no previously committed offset for the consumer group.
+    # This typically happens the very first time a consumer group runs.
+    #
+    # Options:
+    #   "earliest" : Start from the very first message available in the topic.
+    #   "latest"   : Start from the next new message (ignore existing messages).
+    #   "none"     : Throw an exception if no previous offset is found.
+    #
+    # We use "earliest" so that you always receive messages even if you started
+    # this consumer after the producer had already run. This is the safest
+    # choice for a learning environment.
+    "auto.offset.reset": "earliest",
+
+    # Kafka consumers automatically commit (save) their current offset to the
+    # broker periodically. The offset records which messages the consumer has
+    # already read, so that if the consumer restarts, it continues from where
+    # it left off rather than re-reading all messages from the beginning.
+    #
+    # "enable.auto.commit" is True by default. We set it explicitly here so
+    # that it is visible and not a hidden behaviour.
+    #
+    # IMPORTANT: Auto-commit saves the offset on a time interval (every 5
+    # seconds by default), NOT immediately after a message is processed.
+    # This means if the consumer crashes between processing a message and
+    # the next scheduled commit, that message will be processed again on
+    # restart. This is known as "at-least-once delivery": every message is
+    # guaranteed to be processed, but it may be processed more than once.
+    "enable.auto.commit": True
 }
 
 consumer = Consumer(consumer_config)
@@ -32,43 +65,44 @@ consumer = Consumer(consumer_config)
 consumer.subscribe(["orders"])
 
 print("-" * 75)
-print("The Kafka Consumer is running and it is subscribed to the 'orders' topic")
+print("Order Notification Service is running. Subscribed to 'orders' topic.")
 print("-" * 75)
 
 try:
     while True:
-        # .poll() asks the broker for any new messages on the subscribed topics
-        # and returns them to the consumer for processing.
-        # 1.0 is the maximum time in seconds to block waiting for new messages.
-
-        # Polling allows consumers to control the frequency of reading messages.
-        # The Kafka broker does not push messages to the consumers if the consumer
-        # has not polled.
+        # poll() asks the broker for any new messages on the subscribed topics.
+        # The argument (1.0) is the maximum number of seconds to wait for a
+        # new message before returning. If no message arrives within that time,
+        # poll() returns None and the loop continues.
+        #
+        # NOTE: The broker does not push messages to consumers automatically.
+        # The consumer must poll to request them. This gives the consumer full
+        # control over the rate at which it reads and processes messages.
         msg = consumer.poll(1.0)
+
         if msg is None:
             continue
         if msg.error():
             print("❌ Error: {}".format(msg.error()))
             continue
 
-        # The message value is in Bytes.
-        # We decode it to get the original JSON string.
+        # The message value arrives as Bytes.
+        # We decode it back into a UTF-8 string first.
         value = msg.value().decode("utf-8")
 
-        # We then take the JSON string and convert it to a Python dictionary
-        # A Python dictionary is a collection of key-value pairs where each
-        # unique key maps to a specific value.
-
+        # We then convert the JSON string into a Python dictionary so we can
+        # access individual fields by their key names.
         order = json.loads(value)
 
-        print(f"Received order: {order['order_quantity']} x {order['item']} from {order['client_fname']}")
+        # In a real Notification Service, this is where you would trigger an
+        # email, an SMS, or a push notification. For now, we simply print.
+        print(f"📧 Notification sent: Order of {order['order_quantity']} x "
+              f"{order['item']} received from {order['client_fname']}.")
 
 except KeyboardInterrupt:
-    print ("\nStopping consumer...")
+    print("\nStopping Order Notification Service...")
 finally:
-    # You MUST be able to gracefully shut down your application.
-    # This involves closing the consumer connection to prevent resource leaks.
-    # The close() function closes network connections and file handles. It also
-    # commits any outstanding offsets, and the consumer's partition
-    # assignments are revoked.
+    # Closing the consumer is mandatory. It releases network connections and
+    # file handles, commits any pending offsets, and revokes the consumer's
+    # partition assignments so other consumers in the group can take over.
     consumer.close()

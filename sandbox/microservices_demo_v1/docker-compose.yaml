@@ -65,13 +65,7 @@ services:
 
       # This setting specifies the directories where Kafka will store its log files.
       # This is a location inside the Docker container.
-      KAFKA_LOG_DIRS: /var/lib/kafka/data
-
-      # The default number of partitions for any newly created topic.
-      # We set this explicitly to 1 for simplicity. In production, topics
-      # are typically created with multiple partitions to allow parallel
-      # consumption and higher throughput.
-      KAFKA_NUM_PARTITIONS: 1
+      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
 
     # To persist the data locally on the host machine
     volumes:
