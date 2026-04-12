@@ -38,9 +38,9 @@ def delivery_report(err, msg):
 # purely for demonstration purposes.
 order = {
     'order_id': str(uuid.uuid4()),
-    'client_fname': "Peter",
+    'client_fname': "Jeff",
     'item': "Managu",
-    'order_quantity': 3
+    'order_quantity': 1
 }
 
 # The order above is a Python dictionary. We need to convert it to a JSON

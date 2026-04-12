@@ -41,6 +41,7 @@ consumer_config = {
     # We use "earliest" so that you always receive messages even if you started
     # this consumer after the producer had already run. This is the safest
     # choice for a learning environment.
+    # A production environment can use "latest".
     "auto.offset.reset": "earliest",
 
     # Kafka consumers automatically commit (save) their current offset to the

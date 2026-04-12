@@ -4,7 +4,8 @@
 # In a microservices architecture, this file represents the Inventory Service.
 # Its responsibility is to listen for new orders and update stock levels
 # accordingly, for example, by deducting the ordered quantity from a database.
-# It operates completely independently of the Notification Service.
+# It operates completely independently of the Notification Service (a loosely
+# coupled system).
 #
 # NOTE: This file is intentionally similar in structure to
 # consumer_order_notification.py. Both files share the same consumer setup
