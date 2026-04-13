@@ -208,4 +208,5 @@ __marimo__/
 
 sandbox/
 container-volumes/
-microservices_demo/container-volumes/
+1_kafka_fundamentals/container-volumes/
+2_containerized_microservices/container-volumes/
