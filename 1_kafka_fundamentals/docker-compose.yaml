@@ -1,0 +1,88 @@
+services:
+  kafka:
+    image: confluentinc/cp-kafka:8.1.2
+    container_name: kafka
+    ports:
+      - "9092:9092"
+
+    environment:
+      # Enables Kafka to manage its own brokers internally without using
+      # Zookeeper.
+      KAFKA_KRAFT_MODE: 'true'
+
+      # The CLUSTER_ID is the unique identifier for the Kafka cluster,
+      # used for internal management and coordination.
+      # All the brokers will have the same cluster ID, which allows them to
+      # recognize that they belong to the same cluster.
+      CLUSTER_ID: 'BBT4106'
+
+      # One of the brokers is assigned the role of the controller of the
+      # cluster. The following setting specifies that there is only one broker
+      # and that one broker will be assigned the role of the controller.
+      KAFKA_NODE_ID: 1
+
+      # The following setting specifies that the broker will be assigned the
+      # roles of both broker and controller simultaneously.
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      # The following setting specifies the voters required to form a quorum
+      # when voting for the controller.
+      # This is a group of brokers that participate in the election of the
+      # controller.
+      # The voters act as backup nodes in case the primary controller fails.
+      # In this case, there is only one voter, which is the broker itself.
+      # i.e., broker 1 is the only voter required to form a quorum to vote for
+      # the controller, and it is accessible via the address 'kafka:9093'.
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+
+      # IMPORTANT:
+      # Setting the replication factor to 1 means that there is only one copy
+      # of the Kafka metadata.
+      # The Kafka metadata keeps track of which messages each consumer has read.
+
+      # The default setting is 3, which means that there are three copies of
+      # the Kafka metadata.
+      # Setting it to 1 is risky because if the broker that holds the metadata
+      # fails, the metadata will be lost and the consumers will not be able to
+      # keep track of which messages they have read.
+
+      # We set it to 1 because we have one broker and also for simplicity
+      # during the lab. In a production environment, you should have a higher
+      # replication factor for better fault tolerance and reliability.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+      # This setting opens two ports: one for external communication with
+      # clients (9092) and another for internal communication between the brokers (9093)
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092, CONTROLLER://0.0.0.0:9093
+
+      # This setting specifies the advertised listeners, which are the
+      # addresses that clients and other brokers will use to connect to the broker.
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+
+      # This setting specifies the name of the listener that is used for
+      # internal communication between the brokers.
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # This setting specifies the directories where Kafka will store its log files.
+      # This is a location inside the Docker container.
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+
+      # The default number of partitions for any newly created topic.
+      # We set this explicitly to 1 for simplicity. In production, topics
+      # are typically created with multiple partitions to allow parallel
+      # consumption and higher throughput.
+      KAFKA_NUM_PARTITIONS: 1
+
+    # To persist the data locally on the host machine
+    volumes:
+      - kafka_kraft:/var/lib/kafka/data
+
+# Create the folder specified in "device" if it does not exist and ensure it has the correct permissions
+# so that the container can read/write to it without issues.
+volumes:
+  kafka_kraft:
+    driver: local # The volume will be stored locally in the host machine
+    driver_opts:
+      type: none # Binds to the path specified in "device" instead of creating a new directory/file in the host
+      o: bind # Confirms that Docker maps a directory/file in the host directly into the container
+      device: ./container-volumes/kafka/var-lib-kafka-data # The path in the host machine that will be mounted into the container
