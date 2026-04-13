@@ -1,0 +1,40 @@
+# ============================
+# Stage 1: Build dependencies
+# ============================
+FROM python:3.12.10-slim AS builder
+
+WORKDIR /build
+
+# Install build tools only here
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy and install Python dependencies
+COPY requirements.txt .
+
+# Install into a temporary location without caching to reduce image size
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+COPY . .
+
+# ============================
+# Stage 2: Runtime image
+# ============================
+FROM python:3.12.10-slim
+
+WORKDIR /opt/app-producer
+ENV PYTHONPATH=/opt/app-producer
+
+# Copy only the built Python packages from the builder stage
+COPY --from=builder /install /usr/local
+
+# Copy application code
+COPY --from=builder /build /opt/app-producer
+
+# Run the application
+# The -u flag runs Python in unbuffered mode, which means print()
+# statements appear immediately in the Docker logs rather than being
+# held in a buffer. Without this, you may see no output from your
+# containers.
+CMD ["python", "-u", "producer_order.py"]

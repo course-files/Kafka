@@ -50,7 +50,7 @@ consumer_config = {
     # it left off rather than re-reading all messages from the beginning.
     #
     # "enable.auto.commit" is True by default. We set it explicitly here so
-    # that it is visible and not a hidden behaviour.
+    # that it is visible and not a hidden behavior.
     #
     # IMPORTANT: Auto-commit saves the offset on a time interval (every 5
     # seconds by default), NOT immediately after a message is processed.

@@ -1,0 +1,316 @@
+services:
+
+  # ---------------------------------------------------------------------------
+  # KAFKA BROKER 1
+  # ---------------------------------------------------------------------------
+  # In Part 1, there was a single broker handling everything alone.
+  # In Part 2, we have three brokers forming a cluster. Each broker:
+  #   - Stores a copy of every message (replication)
+  #   - Can serve producers and consumers
+  #   - Participates in electing a controller (the cluster's manager)
+  #
+  # If one broker goes down, the other two continue serving traffic.
+  # This is fault tolerance in practice.
+  # ---------------------------------------------------------------------------
+  kafka1:
+    image: confluentinc/cp-kafka:8.1.2
+    container_name: kafka1
+    ports:
+      # EXTERNAL (29092): Exposes this broker to your host machine so you can
+      # run Kafka CLI commands (e.g., kafka-topics, kafka-console-consumer)
+      # directly from your terminal without entering the container.
+      - "29092:29092"
+    environment:
+      KAFKA_KRAFT_MODE: 'true'
+
+      # Every broker in the same cluster MUST share the same CLUSTER_ID.
+      # This is how brokers recognise each other as belonging to the same cluster.
+      CLUSTER_ID: 'BBT4106'
+
+      # Each broker must have a unique node ID within the cluster.
+      KAFKA_NODE_ID: 1
+
+      # Every broker acts as both a data broker and a controller voter.
+      # In a production cluster, these roles are often separated.
+      # For this lab, combining them keeps the setup simpler.
+      KAFKA_PROCESS_ROLES: broker,controller
+
+      # All three brokers are listed as controller voters.
+      # A majority (quorum) is required to elect a controller.
+      # With 3 voters, 2 must agree — meaning 1 broker can fail without
+      # losing the ability to elect a controller.
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka1:9093,2@kafka2:9093,3@kafka3:9093
+
+      # Three listeners are opened on this broker:
+      #   PLAINTEXT  (9092): Internal traffic between containers on the Docker network
+      #   CONTROLLER (9093): Internal traffic between brokers for cluster coordination
+      #   EXTERNAL  (29092): External traffic from your host machine (CLI tools)
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,EXTERNAL://0.0.0.0:29092
+
+      # Advertised listeners tell clients which address to use to connect back
+      # to this broker after discovering it via the bootstrap server.
+      #   PLAINTEXT : Other containers reach this broker using its service name "kafka1"
+      #   EXTERNAL  : Your host machine reaches this broker via localhost:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092,EXTERNAL://localhost:29092
+
+      # Maps each listener name to a security protocol.
+      # PLAINTEXT means no encryption or authentication (acceptable for a lab).
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+
+      # Specifies which listener brokers use to talk to each other internally.
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+      # Specifies which listener is used for controller-to-controller communication.
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+
+      # The directory inside the container where Kafka stores all data.
+      # This MUST match the container-side mount path of the volume below.
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+
+      # How many brokers must store a copy of the internal consumer offset
+      # metadata. Set to 3 because we have 3 brokers.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+
+      # The default replication factor for any newly created topic.
+      # With 3 replicas, every message is stored on all 3 brokers.
+      # One copy is the "leader" (handles reads/writes); the others are "followers"
+      # (stay in sync and take over if the leader fails).
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+
+      # The minimum number of in-sync replicas required before a write is
+      # acknowledged. "In-sync" means the replica is fully caught up with
+      # the leader.
+      # With min.insync.replicas=2, a write succeeds if at least 2 of the
+      # 3 brokers have received it. This means 1 broker can go down without
+      # interrupting writes.
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+
+      # Transaction log replication settings — consistent with 3-broker setup.
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+
+      # The default number of partitions for new topics.
+      # With 3 partitions, Kafka distributes messages across all 3 brokers.
+      # Each partition has one broker as its leader and the others as followers.
+      # You will see this in action in the producer's delivery report output.
+      KAFKA_NUM_PARTITIONS: 3
+
+      # Reduces the consumer group rebalance delay from the default 3 seconds
+      # to 0. This speeds up the lab so you do not wait unnecessarily when
+      # consumers start up.
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+    volumes:
+      - kafka1_data:/var/lib/kafka/data
+
+    # The healthcheck verifies that this broker is fully started and ready to
+    # accept connections before any dependent services (producer, consumers)
+    # are allowed to start.
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # KAFKA BROKER 2
+  # ---------------------------------------------------------------------------
+  # Identical configuration to kafka1 except for:
+  #   - KAFKA_NODE_ID (must be unique per broker)
+  #   - KAFKA_LISTENERS and KAFKA_ADVERTISED_LISTENERS (different external port)
+  # ---------------------------------------------------------------------------
+  kafka2:
+    image: confluentinc/cp-kafka:8.1.2
+    container_name: kafka2
+    ports:
+      - "29093:29093"
+    environment:
+      KAFKA_KRAFT_MODE: 'true'
+      CLUSTER_ID: 'BBT4106'
+      KAFKA_NODE_ID: 2
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka1:9093,2@kafka2:9093,3@kafka3:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,EXTERNAL://0.0.0.0:29093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9092,EXTERNAL://localhost:29093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    volumes:
+      - kafka2_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # KAFKA BROKER 3
+  # ---------------------------------------------------------------------------
+  kafka3:
+    image: confluentinc/cp-kafka:8.1.2
+    container_name: kafka3
+    ports:
+      - "29094:29094"
+    environment:
+      KAFKA_KRAFT_MODE: 'true'
+      CLUSTER_ID: 'BBT4106'
+      KAFKA_NODE_ID: 3
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka1:9093,2@kafka2:9093,3@kafka3:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,EXTERNAL://0.0.0.0:29094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:9092,EXTERNAL://localhost:29094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    volumes:
+      - kafka3_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # POSTGRESQL DATABASE
+  # ---------------------------------------------------------------------------
+  # This database is used exclusively by the Inventory Service consumer.
+  # The Notification Service does not need a database — **not every microservice
+  # requires persistence**, which is an important architectural principle.
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    ports:
+      # Exposed to the host so you can inspect the database directly using
+      # a tool like DBeaver, DataGrip, or psql from your terminal.
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: lab_user
+      POSTGRES_PASSWORD: lab_password
+      POSTGRES_DB: lab_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # Any .sql file placed in this directory is executed automatically
+      # by PostgreSQL the first time the container starts.
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lab_user -d lab_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # PRODUCER SERVICE
+  # ---------------------------------------------------------------------------
+  producer:
+    build:
+      context: ./producer
+      dockerfile: Dockerfile.producer
+    # container_name: producer
+    environment:
+      # The producer connects to all 3 brokers as bootstrap servers.
+      # It actually only needs to reach one successfully to discover the full cluster,
+      # but listing all three makes the producer resilient — if one broker
+      # is temporarily unavailable, it will try the next one.
+      BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092,kafka3:9092
+    depends_on:
+      kafka1:
+        condition: service_healthy
+      kafka2:
+        condition: service_healthy
+      kafka3:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # NOTIFICATION CONSUMER SERVICE
+  # ---------------------------------------------------------------------------
+  consumer-notification:
+    build:
+      context: ./consumer-notification
+      dockerfile: Dockerfile.consumer-notification
+    # container_name: consumer-notification
+    environment:
+      BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092,kafka3:9092
+    depends_on:
+      kafka1:
+        condition: service_healthy
+      kafka2:
+        condition: service_healthy
+      kafka3:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # INVENTORY CONSUMER SERVICE
+  # ---------------------------------------------------------------------------
+  consumer-inventory:
+    build:
+      context: ./consumer-inventory
+      dockerfile: Dockerfile.consumer-inventory
+    # container_name: consumer-inventory
+    environment:
+      BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092,kafka3:9092
+      # The DATABASE_URL follows the format:
+      # postgresql://username:password@host:port/database_name
+      # "postgres" here is the Docker service name, not localhost.
+      DATABASE_URL: postgresql://lab_user:lab_password@postgres:5432/lab_db
+    depends_on:
+      kafka1:
+        condition: service_healthy
+      kafka2:
+        condition: service_healthy
+      kafka3:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+# -----------------------------------------------------------------------------
+# VOLUMES
+# -----------------------------------------------------------------------------
+volumes:
+  kafka1_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./container-volumes/kafka1/data
+
+  kafka2_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./container-volumes/kafka2/data
+
+  kafka3_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./container-volumes/kafka3/data
+
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./container-volumes/postgres/data
