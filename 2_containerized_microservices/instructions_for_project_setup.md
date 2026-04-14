@@ -22,14 +22,14 @@ chmod u+x project_setup.sh
 # Step 2: Build the images (once only) and start all services
 
 ```bash
-docker compose -f docker-compose.yaml up -d --build \
+docker compose -f docker-compose.yaml up --build \
   --scale producer=1 \
   --scale consumer-notification=1 \
   --scale consumer-inventory=1
 ```
 
 # Step 3: In a separate terminal, verify the orders table is being populated
-`docker exec -it postgres psql -U lab_user -d lab_db -c "SELECT * FROM orders;"`
+`docker exec -it postgres psql -U lab_user -d lab_db -c "SELECT * FROM orders ORDER BY received_at DESC LIMIT 5;;"`
 
 # Step 4: Verify the topic and its replication
 
