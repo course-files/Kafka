@@ -1,0 +1,31 @@
+# ============================
+# Stage 1: Build dependencies
+# ============================
+FROM python:3.12.10-slim AS builder
+
+WORKDIR /build
+
+# gcc is required to compile the C extension inside confluent-kafka.
+# It is installed here in the builder stage and discarded afterwards,
+# keeping it out of the final runtime image.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+COPY . .
+
+# ============================
+# Stage 2: Runtime image
+# ============================
+FROM python:3.12.10-slim
+
+WORKDIR /opt/app-transformer
+ENV PYTHONPATH=/opt/app-transformer
+
+COPY --from=builder /install /usr/local
+COPY --from=builder /build /opt/app-transformer
+
+CMD ["python", "-u", "transformer.py"]

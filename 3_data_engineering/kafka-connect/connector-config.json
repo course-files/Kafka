@@ -1,0 +1,24 @@
+{
+  "name": "orders-postgres-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "lab_user",
+    "database.password": "lab_password",
+    "database.dbname": "lab_db",
+
+    "topic.prefix": "dbserver1",
+
+    "table.include.list": "public.orders",
+
+    "plugin.name": "pgoutput",
+
+    "slot.name": "debezium_slot",
+
+    "publication.autocleanup.on.connector.stop": "true",
+
+    "snapshot.mode": "initial"
+  }
+}

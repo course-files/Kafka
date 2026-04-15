@@ -1,0 +1,425 @@
+services:
+
+  # ---------------------------------------------------------------------------
+  # KAFKA BROKER 1
+  # ---------------------------------------------------------------------------
+  kafka1:
+    image: confluentinc/cp-kafka:8.1.2
+    container_name: kafka1
+    ports:
+      - "29092:29092"
+    environment:
+      KAFKA_KRAFT_MODE: 'true'
+      CLUSTER_ID: 'q1Sh3IynR1ymjBBHFQaweg'
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka1:9093,2@kafka2:9093,3@kafka3:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,EXTERNAL://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092,EXTERNAL://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # Set the timezone to UTC to ensure consistent timestamp handling across services.
+      TZ: ${TZ_INFRA}
+      KAFKA_OPTS: "-Duser.timezone=${TZ_INFRA}"
+    volumes:
+      - kafka1_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # KAFKA BROKER 2
+  # ---------------------------------------------------------------------------
+  kafka2:
+    image: confluentinc/cp-kafka:8.1.2
+    container_name: kafka2
+    ports:
+      - "29093:29093"
+    environment:
+      KAFKA_KRAFT_MODE: 'true'
+      CLUSTER_ID: 'q1Sh3IynR1ymjBBHFQaweg'
+      KAFKA_NODE_ID: 2
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka1:9093,2@kafka2:9093,3@kafka3:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,EXTERNAL://0.0.0.0:29093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka2:9092,EXTERNAL://localhost:29093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # Set the timezone to UTC to ensure consistent timestamp handling across services.
+      TZ: ${TZ_INFRA}
+      KAFKA_OPTS: "-Duser.timezone=${TZ_INFRA}"
+    volumes:
+      - kafka2_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # KAFKA BROKER 3
+  # ---------------------------------------------------------------------------
+  kafka3:
+    image: confluentinc/cp-kafka:8.1.2
+    container_name: kafka3
+    ports:
+      - "29094:29094"
+    environment:
+      KAFKA_KRAFT_MODE: 'true'
+      CLUSTER_ID: 'q1Sh3IynR1ymjBBHFQaweg'
+      KAFKA_NODE_ID: 3
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka1:9093,2@kafka2:9093,3@kafka3:9093
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,EXTERNAL://0.0.0.0:29094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:9092,EXTERNAL://localhost:29094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_NUM_PARTITIONS: 3
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # Set the timezone to UTC to ensure consistent timestamp handling across services.
+      TZ: ${TZ_INFRA}
+      KAFKA_OPTS: "-Duser.timezone=${TZ_INFRA}"
+    volumes:
+      - kafka3_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9092"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # POSTGRESQL — SOURCE DATABASE
+  # ---------------------------------------------------------------------------
+  # IMPORTANT CHANGE FROM LAB 2:
+  # The "command" line below sets wal_level=logical on the PostgreSQL server.
+  # This is required for Debezium CDC to work.
+  #
+  # WAL stands for Write-Ahead Log. It is PostgreSQL's internal log of every
+  # change made to the database. By default, wal_level is set to "replica",
+  # which records only enough information for physical replication.
+  # Setting it to "logical" records additional detail — specifically, which
+  # rows changed and what their old and new values were. Debezium reads this
+  # logical WAL stream to detect changes in real time.
+  #
+  # Without wal_level=logical, Debezium cannot connect to PostgreSQL as a
+  # CDC source and the connector registration in Step 3 will fail.
+  # ---------------------------------------------------------------------------
+  # PostgreSQL represents the transactional source system operated from
+  # Lagos, Nigeria. All timestamps written to this database — including the
+  # received_at column on the orders table — will reflect Lagos local time.
+  #
+  # You should observe that when the Transformer reads these records
+  # via Debezium CDC, the received_at value in ClickHouse will appear
+  # 2 hours ahead, because the Transformer converts all timestamps to
+  # Nairobi time (EAT = UTC+3) before writing to the warehouse.
+  # ---------------------------------------------------------------------------
+
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    command: postgres -c wal_level=logical
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: lab_user
+      POSTGRES_PASSWORD: lab_password
+      POSTGRES_DB: lab_db
+      # Set the timezone to UTC to ensure consistent timestamp handling across services.
+      TZ: ${TZ_LAGOS}
+      PGTZ: ${TZ_LAGOS}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lab_user -d lab_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ---------------------------------------------------------------------------
+  # KAFKA CONNECT WITH DEBEZIUM — THE CDC ENGINE
+  # ---------------------------------------------------------------------------
+  # Kafka Connect is a framework for moving data between Kafka and external
+  # systems using reusable components called "connectors".
+  #
+  # Debezium is a CDC (Change Data Capture) platform that runs as a
+  # Kafka Connect plugin. It acts as a PostgreSQL replication client,
+  # reading the logical WAL stream and publishing every INSERT, UPDATE,
+  # and DELETE as a structured event to a Kafka topic.
+  #
+  # The Debezium Docker image comes with the PostgreSQL connector
+  # pre-installed, so no additional setup is needed.
+  #
+  # Kafka Connect exposes a REST API on port 8083. Connectors are
+  # registered, inspected, and managed through this API — which is
+  # what the `register-connector.sh` script uses later in the lab.
+  # ---------------------------------------------------------------------------
+  kafka-connect:
+    image: quay.io/debezium/connect:2.7
+    container_name: kafka-connect
+    ports:
+      - "8083:8083"
+    environment:
+      # The Kafka cluster this Connect instance will publish events to.
+      BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092,kafka3:9092
+
+      # Kafka Connect uses three internal Kafka topics to store its own
+      # state. These topics must exist before Connect starts, or Connect
+      # will create them automatically using the replication factor below.
+      #
+      # We set the replication factor to 3 to match our cluster size and
+      # satisfy the min.insync.replicas=2 requirement on the brokers.
+      # Using a lower replication factor here would cause write failures.
+      GROUP_ID: kafka-connect-group
+      CONFIG_STORAGE_TOPIC: connect_configs
+      CONFIG_STORAGE_REPLICATION_FACTOR: 3
+      OFFSET_STORAGE_TOPIC: connect_offsets
+      OFFSET_STORAGE_REPLICATION_FACTOR: 3
+      STATUS_STORAGE_TOPIC: connect_statuses
+      STATUS_STORAGE_REPLICATION_FACTOR: 3
+
+      # The JSON converter serializes Kafka messages as plain JSON.
+      # schemas.enable=false omits the schema metadata from each message,
+      # keeping the output clean and readable for a learning environment.
+      KEY_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      KEY_CONVERTER_SCHEMAS_ENABLE: 'false'
+      VALUE_CONVERTER: org.apache.kafka.connect.json.JsonConverter
+      VALUE_CONVERTER_SCHEMAS_ENABLE: 'false'
+      # Set the timezone to UTC to ensure consistent timestamp handling across services.
+      TZ: ${TZ_INFRA}
+      KAFKA_OPTS: "-Duser.timezone=${TZ_INFRA}"
+    depends_on:
+      kafka1:
+        condition: service_healthy
+      kafka2:
+        condition: service_healthy
+      kafka3:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8083/ || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+
+  # ---------------------------------------------------------------------------
+  # CLICKHOUSE — DATA WAREHOUSE (DESTINATION) IN NAIROBI, KENYA (EAT = UTC+3)
+  # ---------------------------------------------------------------------------
+  # ClickHouse is a columnar database built for analytical queries (OLAP).
+  # It is fundamentally different from PostgreSQL:
+  #
+  #   PostgreSQL (row store):
+  #     Stores each row together on disk. Fast for reading or writing
+  #     individual records. Optimized for transactional workloads (OLTP).
+  #
+  #   ClickHouse (column store):
+  #     Stores each column together on disk. Fast for aggregating large
+  #     volumes of data across a single column (e.g., SUM, AVG, GROUP BY).
+  #     Optimized for analytical workloads (OLAP).
+  #
+  # In a production data pipeline, PostgreSQL handles live transactional
+  # data (orders being placed), while ClickHouse holds the historical
+  # analytical data (reporting, dashboards, trends).
+  #
+  # ClickHouse exposes two interfaces:
+  #   Port 8123: HTTP interface (used by clickhouse-connect Python client)
+  #   Port 9000: Native binary interface (used by clickhouse-client CLI)
+  # ---------------------------------------------------------------------------
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.3
+    container_name: clickhouse
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    environment:
+      # Sets the password for the default user.
+      # Required from ClickHouse 24.3 onwards — an empty password is rejected
+      # unless explicitly permitted via a configuration file.
+      CLICKHOUSE_PASSWORD: lab_password
+      # Set the timezone to UTC to ensure consistent timestamp handling across services.
+      TZ: ${TZ_NAIROBI}
+      CLICKHOUSE_TIMEZONE: ${TZ_NAIROBI}
+    volumes:
+      # - clickhouse_data:/var/lib/clickhouse
+      - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql
+      # timezone.xml is a more authoritative way to set the ClickHouse server timezone.
+      - ./clickhouse/config.d/timezone.xml:/etc/clickhouse-server/config.d/timezone.xml:ro
+    healthcheck:
+      test: [ "CMD", "clickhouse-client", "--password", "lab_password", "--query", "SELECT 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # PRODUCER SERVICE LOCATED IN LAGOS, NIGERIA (EAT = UTC+1)
+  # ---------------------------------------------------------------------------
+  # The Producer represents the Order Service running in Lagos.
+  # It publishes order events with a produced_at timestamp in Lagos time.
+  # ---------------------------------------------------------------------------
+  producer:
+    build:
+      context: ./producer
+      dockerfile: Dockerfile.producer
+    environment:
+      BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092,kafka3:9092
+      TZ: ${TZ_LAGOS}
+      TIMEZONE: ${TZ_LAGOS}
+    depends_on:
+      kafka1:
+        condition: service_healthy
+      kafka2:
+        condition: service_healthy
+      kafka3:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # NOTIFICATION CONSUMER SERVICE IN LAGOS, NIGERIA (EAT = UTC+1)
+  # ---------------------------------------------------------------------------
+  consumer-notification:
+    build:
+      context: ./consumer-notification
+      dockerfile: Dockerfile.consumer-notification
+    environment:
+      BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092,kafka3:9092
+      TZ: ${TZ_LAGOS}
+      TIMEZONE: ${TZ_LAGOS}
+    depends_on:
+      kafka1:
+        condition: service_healthy
+      kafka2:
+        condition: service_healthy
+      kafka3:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # INVENTORY CONSUMER SERVICE IN LAGOS, NIGERIA (EAT = UTC+1)
+  # ---------------------------------------------------------------------------
+  consumer-inventory:
+    build:
+      context: ./consumer-inventory
+      dockerfile: Dockerfile.consumer-inventory
+    environment:
+      BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092,kafka3:9092
+      DATABASE_URL: postgresql://lab_user:lab_password@postgres:5432/lab_db
+      # Set the timezone to UTC to ensure consistent timestamp handling across services.
+      TZ: ${TZ_LAGOS}
+      TIMEZONE: ${TZ_LAGOS}
+    depends_on:
+      kafka1:
+        condition: service_healthy
+      kafka2:
+        condition: service_healthy
+      kafka3:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------------------
+  # TRANSFORMER SERVICE — CDC CONSUMER AND WAREHOUSE WRITER LOCATED IN NAIROBI,
+  # KENYA (EAT = UTC+3)
+  # ---------------------------------------------------------------------------
+  # This service is the heart of Lab 3. It:
+  #   1. Subscribes to the Debezium CDC topic (dbserver1.public.orders)
+  #   2. Parses the Debezium event envelope to extract the changed row
+  #   3. Applies data transformations (see transformer.py for full details)
+  #   4. Writes the transformed record to ClickHouse
+  #
+  # It runs as a long-lived service, continuously processing CDC events
+  # as they arrive from Debezium.
+  # ---------------------------------------------------------------------------
+  transformer:
+    build:
+      context: ./transformer
+      dockerfile: Dockerfile.transformer
+    environment:
+      BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092,kafka3:9092
+      CLICKHOUSE_HOST: clickhouse
+      CLICKHOUSE_PORT: 8123
+      CLICKHOUSE_PASSWORD: lab_password
+      # Set the timezone to UTC to ensure consistent timestamp handling across services.
+      TZ: ${TZ_NAIROBI}
+      TIMEZONE: ${TZ_NAIROBI}
+    depends_on:
+      kafka1:
+        condition: service_healthy
+      kafka2:
+        condition: service_healthy
+      kafka3:
+        condition: service_healthy
+      clickhouse:
+        condition: service_healthy
+      kafka-connect:
+        condition: service_healthy
+
+# -----------------------------------------------------------------------------
+# VOLUMES
+# -----------------------------------------------------------------------------
+volumes:
+  kafka1_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./container-volumes/kafka1/data
+
+  kafka2_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./container-volumes/kafka2/data
+
+  kafka3_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./container-volumes/kafka3/data
+
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./container-volumes/postgres/data
+
+  clickhouse_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./container-volumes/clickhouse/data

@@ -1,0 +1,7 @@
+<!-- ClickHouse server timezone configuration -->
+<!-- This file sets the server-level timezone for all queries and stored  -->
+<!-- timestamps. It takes precedence over the TZ environment variable.    -->
+<!-- Nairobi, Kenya — East Africa Time (EAT = UTC+3)                      -->
+<clickhouse>
+    <timezone>Africa/Nairobi</timezone>
+</clickhouse>

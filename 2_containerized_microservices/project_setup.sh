@@ -2,7 +2,8 @@
 
 set -e
 
-# Resolve the directory where this script lives
+# Resolve the directory where this script is located,
+# to ensure we create volumes in the correct path
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BASE_DIR="$SCRIPT_DIR/container-volumes"
 

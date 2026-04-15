@@ -1,9 +1,15 @@
 # Cleanup Instructions
 
-Once you are done with the lab **and you have pushed your commits to GitHub for grading**, delete the following from your development machine to save on space:
+Execute the following steps once you are done with the lab,
+**and you have pushed your commits to GitHub for grading**:
 
-## Python Virtual Environment
+## Delete the Python Virtual Environment
 
 - `.venv`
 
-_Note:_ You can also wait until the end of the semester after the marks have been officially released to implement the cleanup in all the labs.
+## Executing the Cleanup Scripts
+
+1. [Cleanup Part 2 of the Lab](../2_containerized_microservices/project_cleanup.sh)
+
+***Note:** You can also wait until the end of the semester after the marks have
+been officially released to implement the cleanup in all the labs.*
