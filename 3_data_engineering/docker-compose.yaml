@@ -208,6 +208,7 @@ services:
       VALUE_CONVERTER_SCHEMAS_ENABLE: 'false'
       # Set the timezone to UTC to ensure consistent timestamp handling across services.
       TZ: ${TZ}
+      KAFKA_OPTS: "-Duser.timezone=${TZ}"
     depends_on:
       kafka1:
         condition: service_healthy
@@ -260,6 +261,7 @@ services:
       CLICKHOUSE_PASSWORD: lab_password
       # Set the timezone to UTC to ensure consistent timestamp handling across services.
       TZ: ${TZ}
+      CLICKHOUSE_TIMEZONE: ${TZ}
     volumes:
       # - clickhouse_data:/var/lib/clickhouse
       - ./clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql
@@ -353,6 +355,7 @@ services:
       CLICKHOUSE_PASSWORD: lab_password
       # Set the timezone to UTC to ensure consistent timestamp handling across services.
       TZ: ${TZ}
+      TIMEZONE: ${TZ}
     depends_on:
       kafka1:
         condition: service_healthy
@@ -361,6 +364,8 @@ services:
       kafka3:
         condition: service_healthy
       clickhouse:
+        condition: service_healthy
+      kafka-connect:
         condition: service_healthy
 
 # -----------------------------------------------------------------------------

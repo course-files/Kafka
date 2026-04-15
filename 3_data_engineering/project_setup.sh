@@ -38,4 +38,8 @@ echo "Setting permissions..."
 chmod -R 775 "$BASE_DIR"
 chown -R 1000:1000 "$BASE_DIR"
 
-echo "Setup complete. You may now proceed to the next step in the lab."
+# The ClickHouse container runs internally as user clickhouse with User ID: 101.
+# To ensure it can read/write to the data directory, we set ownership to 101:101.
+chown -R 101:101 ./container-volumes/clickhouse
+
+echo "Done. You may now proceed to the next step."

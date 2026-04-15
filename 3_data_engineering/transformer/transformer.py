@@ -46,10 +46,10 @@
 import os
 import json
 import time
-import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from confluent_kafka import Consumer, KafkaError
 import clickhouse_connect
-from datetime import datetime, timezone, timedelta
 
 # -----------------------------------------------------------------------------
 # CONFIGURATION
@@ -59,6 +59,14 @@ BOOTSTRAP_SERVERS  = os.environ.get('BOOTSTRAP_SERVERS', 'localhost:9092')
 CLICKHOUSE_HOST    = os.environ.get('CLICKHOUSE_HOST', 'localhost')
 CLICKHOUSE_PORT    = int(os.environ.get('CLICKHOUSE_PORT', 8123))
 CLICKHOUSE_PASSWORD = os.environ.get('CLICKHOUSE_PASSWORD', 'lab_password')
+
+# Read the timezone from the environment variable set in docker-compose.yaml.
+# ZoneInfo looks up the IANA timezone database (e.g., "Africa/Nairobi").
+# This is the same timezone database that operating systems use.
+# Changing the timezone only requires updating the .env file and restarting
+# the container — no code changes or rebuilds are needed.
+TIMEZONE_NAME = os.environ.get('TIMEZONE', 'Africa/Nairobi')
+TZ = ZoneInfo(TIMEZONE_NAME)
 
 # The Debezium connector publishes to a topic named using the pattern:
 #   {topic.prefix}.{schema}.{table}
@@ -116,12 +124,16 @@ def transform_order(payload: dict) -> dict | None:
     # -------------------------------------------------------------------------
     # TRANSFORMATION 1: Timestamp conversion.
     # -------------------------------------------------------------------------
-    # PostgreSQL TIMESTAMP columns are captured by Debezium as microseconds
-    # since the Unix epoch (1970-01-01 00:00:00 UTC).
-    # We convert this integer to a Python datetime object so ClickHouse
-    # can store it correctly as a DateTime column.
+    # Debezium captures PostgreSQL TIMESTAMP columns as microseconds since
+    # the Unix epoch (1970-01-01 00:00:00 UTC). We first reconstruct the
+    # UTC moment, then convert it to Africa/Nairobi time so that all
+    # timestamps stored in ClickHouse reflect the local business timezone.
     received_at_us = row.get('received_at', 0)
-    received_at = datetime.fromtimestamp(received_at_us / 1_000_000, tz=timezone.utc)
+    # received_at = datetime.datetime.fromtimestamp(
+    received_at = datetime.fromtimestamp(
+        received_at_us / 1_000_000,
+        tz=timezone.utc  # start from the correct UTC moment
+    ).astimezone(TZ)  # then convert to Africa/Nairobi
 
     # -------------------------------------------------------------------------
     # TRANSFORMATION 2: Field rename.
