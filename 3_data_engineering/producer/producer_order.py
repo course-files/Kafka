@@ -18,12 +18,24 @@
 #   2. 'acks': 'all' ensures full replication acknowledgment per message
 #   3. Orders are generated in a loop to demonstrate live message flow
 # -----------------------------------------------------------------------------
+#
+# TIMEZONE CONTEXT:
+#   This service runs on West Africa Time (WAT = UTC+1).
+#   The produced_at timestamp appended to each order reflects Lagos local time.
+#
+#   LESSON TO LEARN: When this timestamp eventually reaches the Nairobi
+#   Transformer, it will be converted to East Africa Time (EAT = UTC+3).
+#   The same moment in time will appear 2 hours later on the clock.
+#   This is correct behaviour — not a data error.
+# -----------------------------------------------------------------------------
 
 import os
 import time
 import uuid
 import json
 import random
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from confluent_kafka import Producer
 
 # Read the bootstrap servers from the environment variable set in
@@ -32,6 +44,12 @@ from confluent_kafka import Producer
 # lab, a staging environment, and a production cluster simply by changing
 # the environment variable.
 BOOTSTRAP_SERVERS = os.environ.get('BOOTSTRAP_SERVERS', 'localhost:9092')
+
+# Lagos, Nigeria — WAT (UTC+1)
+# Read from the TIMEZONE environment variable so the timezone is
+# configurable without a code change or image rebuild.
+TIMEZONE_NAME = os.environ.get('TIMEZONE', 'Africa/Lagos')
+TZ = ZoneInfo(TIMEZONE_NAME)
 
 producer_config = {
     'bootstrap.servers': BOOTSTRAP_SERVERS,
@@ -56,8 +74,17 @@ producer_config = {
 producer = Producer(producer_config)
 
 # This provides sample data to generate realistic-looking orders.
-ITEMS   = ["Managu", "Sukuma Wiki", "Spinach", "Mahindi", "Nyanya", "Matoke"]
-CLIENTS = ["Peter", "Jane", "Koinange", "Wanjiru", "Otieno", "Aisha"]
+ITEMS   = ["Managu", "Sukuma Wiki", "Spinach", "Mahindi", "Nyanya", "Matoke",
+           'Injera', 'Jollof Rice', 'Ugali', 'Fufu', 'Egusi Soup', 'Nyama Choma',
+           'Kaimati', 'Mahamri', 'Omena', 'Mutura', 'Matumbo']
+CLIENTS = ['Omondi', 'Kiplagat', 'Mutua', 'Wanyama', 'Odhiambo', 'Kariuki',
+           'Njoroge', 'Ochieng', 'Muthoni', 'Mwangi','Mugisha', 'Ndayishimiye',
+           'Nkurunziza', 'Kagame', 'Bizimana', 'Mukasa', 'Kabongo', 'Mutombo',
+           'Kabila', 'Lumumba', 'Mugabe', 'Mandela', 'Zuma', 'Malema', 'Mbeki',
+           'Koinange', 'Mandela', 'Zuma', 'Malema', 'Munee', 'Munyao', 'Munyoki',
+           'Munyua', 'Munyui', 'Munyuli', 'Munywe', 'Munzala', 'Munzala',
+           'Hassan', 'Mohammed', 'Ali', 'Abdi', 'Omar', 'Osman', 'Hussein',
+           'Ahmed', 'Ibrahim', 'Adan', 'Yusuf', 'Abdullahi']
 
 def delivery_report(err, msg):
     """
@@ -89,17 +116,25 @@ print("Waiting for the Kafka cluster to stabilize...")
 time.sleep(10)
 
 print("-" * 75)
-print("The 'order producer' is running. Sending one order every 5 seconds.")
-print("Sending one order every 5 seconds for simulation purposes.")
+print(f"Order Producer is running  [Timezone: {TIMEZONE_NAME}]")
+print("Sending one order every 5 seconds.")
 print(f"Connected to brokers: {BOOTSTRAP_SERVERS}")
 print("-" * 75)
 
 while True:
+    # Capture the current Lagos time as a timezone-aware timestamp.
+    # Including produced_at in the Kafka message gives the Transformer
+    # a second reference timestamp to compare against received_at
+    # (set by the Inventory Consumer when the record lands in PostgreSQL).
+    now_lagos = datetime.now(tz=TZ)
     order = {
         'order_id':       str(uuid.uuid4()),
         'client_fname':   random.choice(CLIENTS),
         'item':           random.choice(ITEMS),
-        'order_quantity': random.randint(1, 8)
+        'order_quantity': random.randint(1, 8),
+        # ISO 8601 format preserves the UTC offset (+01:00) so any
+        # downstream service can parse this unambiguously.
+        'produced_at': now_lagos.isoformat()
     }
 
     value = json.dumps(order).encode("utf-8")

@@ -14,10 +14,21 @@
 # would be extracted into a shared library. The files are kept separate here
 # so that each service is self-contained and easy to follow independently.
 # -----------------------------------------------------------------------------
-
+# TIMEZONE CONTEXT:
+#   This service runs on West Africa Time (WAT = UTC+1).
+#   The received_at timestamp recorded in PostgreSQL reflects the moment
+#   this service consumed the Kafka message — expressed in Lagos local time.
+#
+#   TEACHING POINT — This received_at value (Lagos WAT) is what Debezium
+#   captures and forwards to the Transformer. The Transformer then converts
+#   it to Nairobi time (EAT = UTC+3), producing a timestamp that appears
+#   2 hours later. Students should verify this by querying both databases.
+# -----------------------------------------------------------------------------
 import os
 import time
 import json
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from confluent_kafka import Consumer
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
@@ -29,6 +40,10 @@ from models import Order, Base
 
 DATABASE_URL     = os.environ.get('DATABASE_URL')
 BOOTSTRAP_SERVERS = os.environ.get('BOOTSTRAP_SERVERS', 'localhost:9092')
+
+# Lagos, Nigeria — WAT (UTC+1)
+TIMEZONE_NAME = os.environ.get('TIMEZONE', 'Africa/Lagos')
+TZ = ZoneInfo(TIMEZONE_NAME)
 
 # create_engine() establishes the connection configuration to PostgreSQL.
 # No actual connection is made yet — SQLAlchemy connects lazily when needed.
@@ -69,9 +84,9 @@ print("Waiting for the Kafka cluster and database to stabilize...")
 time.sleep(10)
 
 print("-" * 75)
-print("Order Inventory Service is running. Subscribed to 'orders' topic.")
-print(f"Connected to brokers: {BOOTSTRAP_SERVERS}")
-print(f"Connected to database: {DATABASE_URL}")
+print(f"Order Inventory Service is running  [Timezone: {TIMEZONE_NAME}]")
+print(f"Connected to brokers  : {BOOTSTRAP_SERVERS}")
+print(f"Connected to database : {DATABASE_URL}")
 print("-" * 75)
 
 try:
@@ -111,9 +126,10 @@ try:
                 print(
                     f"📦 Inventory updated\n"
                     f"    Order ID  : {order_data['order_id']}\n"
-                    f"    Deducted  : {order_data['order_quantity']} x {order_data['item']}\n"
-                    f"    Saved to  : PostgreSQL (orders table)\n"
-                    f"    Partition : {msg.partition()}\n"
+                    f"    Deducted    : {order_data['order_quantity']} x {order_data['item']}\n"
+                    f"    Received at : {order_record.received_at}  ← Lagos time (WAT)\n"
+                    f"    Saved to    : PostgreSQL (orders table)\n"
+                    f"    Partition   : {msg.partition()}\n"
                 )
 
         except Exception as db_error:

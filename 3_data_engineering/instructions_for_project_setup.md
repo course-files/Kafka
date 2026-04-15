@@ -435,7 +435,7 @@ docker-compose down -v
 
 1. **Modify the transformation.** Add a new computed field to the
    transformer, for example `item_category` that classifies items into
-   groups (e.g., "leafy greens" vs "root vegetables"). Rebuild the
+   groups (e.g., "Meat-Based Dishes" vs "Vegetable-Based Dishes"). Rebuild the
    transformer container and verify the new field appears in ClickHouse.
 
 2. **Write an analytical query.** Using the ClickHouse CLI, write a
