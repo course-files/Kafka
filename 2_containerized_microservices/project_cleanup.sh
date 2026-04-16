@@ -10,7 +10,7 @@ echo "Run the following command to shutdown the Docker containers first:"
 echo "docker-compose down -v"
 # Optional confirmation (good for a learning environment, bad for automation)
 read -r -p "Did your run 'docker-compose down -v' first? (y/N): " confirm
-if [[ "$confirm" != "N" ]]; then
+if [[ "$confirm" != "y" ]]; then
     echo "Aborted to give you a chance to run 'docker-compose down -v' first."
     exit 0
 fi
