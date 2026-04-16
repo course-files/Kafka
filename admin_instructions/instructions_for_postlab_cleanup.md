@@ -10,6 +10,7 @@ Execute the following steps once you are done with the lab,
 ## Executing the Cleanup Scripts
 
 1. [Cleanup Part 2 of the Lab](../2_containerized_microservices/project_cleanup.sh)
+2. [Cleanup Part 3 of the Lab](../3_data_engineering/project_cleanup.sh)
 
 ***Note:** You can also wait until the end of the semester after the marks have
 been officially released to implement the cleanup in all the labs.*
