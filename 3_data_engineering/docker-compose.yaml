@@ -373,6 +373,11 @@ services:
       # Set the timezone to UTC to ensure consistent timestamp handling across services.
       TZ: ${TZ_NAIROBI}
       TIMEZONE: ${TZ_NAIROBI}
+      # The timezone of the PostgreSQL source database.
+      # Debezium reads naive timestamps from the WAL and labels them as UTC.
+      # This tells the transformer what timezone those naive values actually
+      # represent so it can correct the conversion to Nairobi time.
+      SOURCE_TIMEZONE: ${TZ_LAGOS}
     depends_on:
       kafka1:
         condition: service_healthy

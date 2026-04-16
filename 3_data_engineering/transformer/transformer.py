@@ -3,7 +3,7 @@
 # -----------------------------------------------------------------------------
 # This service sits at the centre of the Lab 3 data pipeline.
 #
-# DATA FLOW:
+# DATA FLOW IN THE PIPELINE:
 #
 #   PostgreSQL (orders table)
 #       ↓ Debezium reads the WAL stream
@@ -34,13 +34,22 @@
 #     "u" — Update. An existing row was modified.
 #     "d" — Delete. A row was deleted. "after" will be null.
 #
+#   IMPORTANT — TOMBSTONE MESSAGES:
+#     Debezium publishes TWO Kafka messages for every DELETE:
+#       1. A delete event  : op="d", value is a normal JSON payload
+#       2. A tombstone     : value is NULL at the Kafka message level
+#     The tombstone allows Kafka log compaction to remove the deleted
+#     record from the topic. We must check for null message values before
+#     attempting to decode, or the transformer service will crash on every
+#     DELETE.
+#
 # TRANSFORMATIONS APPLIED (see transform_order()):
-#   1. Field rename   : client_fname  → customer_name
-#   2. Computed field : is_bulk_order (True if order_quantity > 5)
-#   3. Timestamp      : received_at converted from microseconds to datetime
-#   4. Audit field    : processed_at added (time this service ran the transform)
-#   5. Audit field    : operation added (INSERT, UPDATE, SNAPSHOT)
-#   6. Filter         : DELETE events are skipped — the warehouse is append-only
+#   1. Field rename    : client_fname  → customer_name
+#   2. Computed field  : is_bulk_order (True if order_quantity > 5)
+#   3. Timestamp       : received_at converted from Lagos local time to Nairobi
+#   4. Audit field     : processed_at added (Nairobi time this service ran)
+#   5. Audit field     : operation added (INSERT, UPDATE, SNAPSHOT, DELETE)
+#   6. Filter          : DELETE events are logged but not written to ClickHouse
 # -----------------------------------------------------------------------------
 
 import os
@@ -55,18 +64,26 @@ import clickhouse_connect
 # CONFIGURATION
 # -----------------------------------------------------------------------------
 
-BOOTSTRAP_SERVERS  = os.environ.get('BOOTSTRAP_SERVERS', 'localhost:9092')
-CLICKHOUSE_HOST    = os.environ.get('CLICKHOUSE_HOST', 'localhost')
-CLICKHOUSE_PORT    = int(os.environ.get('CLICKHOUSE_PORT', 8123))
+BOOTSTRAP_SERVERS   = os.environ.get('BOOTSTRAP_SERVERS', 'localhost:9092')
+CLICKHOUSE_HOST     = os.environ.get('CLICKHOUSE_HOST', 'localhost')
+CLICKHOUSE_PORT     = int(os.environ.get('CLICKHOUSE_PORT', 8123))
 CLICKHOUSE_PASSWORD = os.environ.get('CLICKHOUSE_PASSWORD', 'lab_password')
 
-# Read the timezone from the environment variable set in docker-compose.yaml.
-# ZoneInfo looks up the IANA timezone database (e.g., "Africa/Nairobi").
-# This is the same timezone database that operating systems use.
-# Changing the timezone only requires updating the .env file and restarting
-# the container — no code changes or rebuilds are needed.
+# The timezone where this service stores and displays timestamps.
+# Read from the TIMEZONE environment variable set in docker-compose.yaml.
+# Changing the timezone only requires updating .env and restarting —
+# no code changes or rebuilds are needed.
 TIMEZONE_NAME = os.environ.get('TIMEZONE', 'Africa/Nairobi')
 TZ = ZoneInfo(TIMEZONE_NAME)
+
+# The timezone where PostgreSQL is running.
+# Debezium reads TIMESTAMP WITHOUT TIME ZONE columns from the WAL as naive
+# values. Since the PostgreSQL server is in Lagos time, these naive values
+# represent Lagos local time. We must attach this timezone explicitly before
+# converting to Nairobi time — otherwise the 1-hour difference between Lagos
+# (UTC+1) and Nairobi (UTC+3) produces a timestamp that is 1 hour wrong.
+SOURCE_TIMEZONE_NAME = os.environ.get('SOURCE_TIMEZONE', 'Africa/Lagos')
+SOURCE_TZ = ZoneInfo(SOURCE_TIMEZONE_NAME)
 
 # The Debezium connector publishes to a topic named using the pattern:
 #   {topic.prefix}.{schema}.{table}
@@ -107,12 +124,15 @@ def transform_order(payload: dict) -> dict | None:
     # FILTER: Skip DELETE events.
     # -------------------------------------------------------------------------
     # In this warehouse, we treat the orders table as append-only.
-    # A deleted order in PostgreSQL should not disappear from the
-    # warehouse — the warehouse is a historical record.
-    # In a production system, you might instead set a "deleted" flag.
+    # A deleted order in PostgreSQL should not disappear from the warehouse —
+    # the warehouse is a historical record of all orders ever placed.
+    # In a production system you might instead set a "deleted" flag on the row.
+    #
+    # NOTE: A separate tombstone message (null value) is also published by
+    # Debezium after each DELETE. That is handled in the main loop before
+    # this function is called — it never reaches here.
     if operation_code == 'd':
-        print(f"⏭️  Skipping DELETE event for order. "
-              f"The warehouse retains historical records.")
+        print(f"⏭️  Skipping DELETE event. The warehouse retains historical records.")
         return None
 
     # For INSERT, UPDATE, and SNAPSHOT events, the row data is in "after".
@@ -122,18 +142,48 @@ def transform_order(payload: dict) -> dict | None:
         return None
 
     # -------------------------------------------------------------------------
-    # TRANSFORMATION 1: Timestamp conversion.
+    # TRANSFORMATION 1: Timestamp conversion — Lagos time to Nairobi time.
     # -------------------------------------------------------------------------
-    # Debezium captures PostgreSQL TIMESTAMP columns as microseconds since
-    # the Unix epoch (1970-01-01 00:00:00 UTC). We first reconstruct the
-    # UTC moment, then convert it to Africa/Nairobi time so that all
-    # timestamps stored in ClickHouse reflect the local business timezone.
+    # HOW DEBEZIUM HANDLES TIMESTAMP WITHOUT TIME ZONE:
+    #   Debezium reads naive timestamp values from the PostgreSQL WAL and
+    #   publishes them as microseconds since the Unix epoch, with the JVM
+    #   treating the naive value as UTC by default.
+    #
+    #   Since PostgreSQL is running in Lagos time (UTC+1), the naive value
+    #   stored in the WAL is Lagos local time. Debezium therefore publishes
+    #   microseconds representing Lagos-local-time-labelled-as-UTC — which is
+    #   exactly 1 hour ahead of the true UTC epoch.
+    #
+    # THE CORRECT CONVERSION (Option B):
+    #   Step 1: Extract the naive datetime from the epoch value.
+    #           The naive value IS the Lagos local time — not UTC.
+    #   Step 2: Attach the Lagos timezone explicitly so Python knows the
+    #           correct local context.
+    #   Step 3: Convert from Lagos to Nairobi (a 2-hour shift, UTC+1 → UTC+3).
+    #
+    # WHY THIS PRODUCES CORRECT NAIROBI TIME:
+    #   If the actual Nairobi time is 10:00 EAT:
+    #     Lagos local time stored in PG: 08:00 WAT
+    #     Debezium epoch (Lagos as UTC):  08:00 UTC equivalent
+    #     After Step 1 (naive extract):  08:00 (naive)
+    #     After Step 2 (attach Lagos):   08:00 WAT
+    #     After Step 3 (convert):        10:00 EAT ✓
+
     received_at_us = row.get('received_at', 0)
-    # received_at = datetime.datetime.fromtimestamp(
-    received_at = datetime.fromtimestamp(
+
+    # Step 1: Extract the naive datetime. fromtimestamp with UTC gives us the
+    # wall-clock value Debezium recorded, then replace(tzinfo=None) strips
+    # the UTC label to leave a pure naive datetime.
+    naive_dt = datetime.fromtimestamp(
         received_at_us / 1_000_000,
-        tz=timezone.utc  # start from the correct UTC moment
-    ).astimezone(TZ)  # then convert to Africa/Nairobi
+        tz=timezone.utc
+    ).replace(tzinfo=None)
+
+    # Step 2: The naive value is Lagos local time. Attach Lagos timezone.
+    source_dt = naive_dt.replace(tzinfo=SOURCE_TZ)
+
+    # Step 3: Convert to the target timezone (Africa/Nairobi).
+    received_at = source_dt.astimezone(TZ)
 
     # -------------------------------------------------------------------------
     # TRANSFORMATION 2: Field rename.
@@ -158,21 +208,21 @@ def transform_order(payload: dict) -> dict | None:
     # -------------------------------------------------------------------------
     # TRANSFORMATION 4: Audit fields.
     # -------------------------------------------------------------------------
-    # processed_at records the exact moment this transformer processed
-    # the event. This is different from received_at (when the order entered
-    # PostgreSQL). The gap between the two is the pipeline latency —
-    # a useful metric in a production system.
-    processed_at = datetime.now(tz=timezone.utc)
+    # processed_at records the exact Nairobi wall-clock time at which this
+    # transformer processed the event. Both received_at and processed_at are
+    # now stored in Africa/Nairobi time, making the difference between them
+    # a clean measure of pipeline latency in a consistent timezone.
+    processed_at = datetime.now(tz=TZ)
 
     return {
-        'order_id':      row.get('order_id', ''),
-        'customer_name': customer_name,
-        'item':          row.get('item', ''),
+        'order_id':       row.get('order_id', ''),
+        'customer_name':  customer_name,
+        'item':           row.get('item', ''),
         'order_quantity': order_quantity,
-        'is_bulk_order': is_bulk_order,
-        'received_at':   received_at,
-        'processed_at':  processed_at,
-        'operation':     operation
+        'is_bulk_order':  is_bulk_order,
+        'received_at':    received_at,
+        'processed_at':   processed_at,
+        'operation':      operation
     }
 
 # -----------------------------------------------------------------------------
@@ -182,8 +232,8 @@ def transform_order(payload: dict) -> dict | None:
 def connect_to_clickhouse():
     """
     Establishes a connection to ClickHouse and returns the client.
-    Retries with a delay to handle cases where ClickHouse is still
-    starting up when this service initialises.
+    Retries indefinitely with a delay to handle cases where ClickHouse is
+    still starting up when this service initialises.
     """
     while True:
         try:
@@ -194,7 +244,6 @@ def connect_to_clickhouse():
                 password=CLICKHOUSE_PASSWORD,
                 database='default'
             )
-            # Run a trivial query to verify the connection is alive.
             client.query('SELECT 1')
             print(f"✅ Connected to ClickHouse at {CLICKHOUSE_HOST}:{CLICKHOUSE_PORT}")
             return client
@@ -272,6 +321,8 @@ print("-" * 75)
 print("Transformer Service is running.")
 print(f"Consuming from Kafka topic : {DEBEZIUM_TOPIC}")
 print(f"Writing to ClickHouse      : {CLICKHOUSE_HOST}:{CLICKHOUSE_PORT}")
+print(f"Source timezone            : {SOURCE_TIMEZONE_NAME}")
+print(f"Target timezone            : {TIMEZONE_NAME}")
 print("-" * 75)
 
 try:
@@ -280,28 +331,45 @@ try:
 
         if msg is None:
             continue
+
+        # ---------------------------------------------------------------------
+        # TOMBSTONE GUARD — must be checked before any other operation.
+        # ---------------------------------------------------------------------
+        # Debezium publishes two messages per DELETE:
+        #   1. A delete event  : op="d", normal JSON value
+        #   2. A tombstone     : msg.value() is None (no JSON at all)
+        #
+        # The tombstone enables Kafka log compaction to remove the record
+        # from the topic. It carries no data and must be skipped before any
+        # attempt to call .decode() or json.loads(), both of which will
+        # raise an exception on a None value and crash the service.
+        if msg.value() is None:
+            print("🪦 Tombstone message received (post-DELETE cleanup). Skipping.")
+            continue
+
         if msg.error():
             if msg.error().code() == KafkaError._PARTITION_EOF:
-                # End of partition — not an error. The consumer has
-                # caught up with the current end of the topic.
+                # End of partition — not an error. The consumer has caught
+                # up with the current end of the topic.
                 continue
             print(f"❌ Kafka error: {msg.error()}")
             continue
 
-        # Parse the raw JSON message from Debezium.
-        event = json.loads(msg.value().decode('utf-8'))
-
-        # The actual change data is inside the "payload" key.
-        payload = event.get('payload', {})
-
-        # Apply all transformations. Returns None for events to skip.
-        record = transform_order(payload)
-
-        if record is None:
-            continue
-
         try:
+            # Parse the raw JSON message from Debezium.
+            event = json.loads(msg.value().decode('utf-8'))
+
+            # The actual change data is inside the "payload" key.
+            payload = event.get('payload', {})
+
+            # Apply all transformations. Returns None for events to skip.
+            record = transform_order(payload)
+
+            if record is None:
+                continue
+
             write_to_clickhouse(clickhouse_client, record)
+
             print(
                 f"🏭 Transformed and written to ClickHouse\n"
                 f"   Order ID      : {record['order_id']}\n"
@@ -309,11 +377,14 @@ try:
                 f"   Item          : {record['order_quantity']} x {record['item']}\n"
                 f"   Bulk order    : {'Yes' if record['is_bulk_order'] else 'No'}\n"
                 f"   Operation     : {record['operation']}\n"
-                f"   Received at   : {record['received_at']}\n"
-                f"   Processed at  : {record['processed_at']}\n"
+                f"   Received at   : {record['received_at'].strftime('%Y-%m-%d %H:%M:%S %Z')}\n"
+                f"   Processed at  : {record['processed_at'].strftime('%Y-%m-%d %H:%M:%S %Z')}\n"
             )
+
+        except json.JSONDecodeError as e:
+            print(f"⚠️  Could not parse message as JSON: {e}. Skipping.")
         except Exception as e:
-            print(f"⚠️  Failed to write to ClickHouse: {e}")
+            print(f"⚠️  Unexpected error processing message: {e}. Skipping.")
 
 except KeyboardInterrupt:
     print("\nStopping Transformer Service...")
