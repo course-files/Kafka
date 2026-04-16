@@ -172,7 +172,9 @@ the concepts in Part 2.
 ### Step 1 — Set Up Directories and Start the Stack
 
 ```bash
-# Create the required volume directories (run once only)
+# Create the required volume directories
+chmod u+x project_setup.sh
+sed -i.bak 's/\r$//' project_setup.sh
 ./project_setup.sh
 
 # Build all images and start all services
@@ -238,7 +240,8 @@ database and table to monitor.
 
 ```bash
 cd 3_data_engineering/
-chmod +x kafka-connect/register-connector.sh
+chmod u+x kafka-connect/register-connector.sh
+sed -i.bak 's/\r$//' register-connector.sh
 ./kafka-connect/register-connector.sh
 ```
 
@@ -429,4 +432,9 @@ docker-compose down
 docker-compose down -v
 ```
 
+```bash
+chmod u+x project_cleanup.sh
+sed -i.bak 's/\r$//' project_cleanup.sh
+./project_cleanup.sh
+```
 ---

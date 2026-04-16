@@ -15,7 +15,9 @@ the cluster tolerates one broker failure without losing a single message.
 Make `project_setup.sh` executable:
 
 ```bash
+# Create the required volume directories
 chmod u+x project_setup.sh
+sed -i.bak 's/\r$//' project_setup.sh
 ./project_setup.sh
 ```
 
@@ -112,7 +114,17 @@ docker exec kafka1 kafka-consumer-groups \
 ```
 
 # Step 8: Tear down the entire lab
+
+```bash
+# Stop all services but retain volume data
 docker-compose down
 
-# To also delete all stored data (volumes):
+# Stop all services AND delete all stored data
 docker-compose down -v
+```
+
+```bash
+chmod u+x project_cleanup.sh
+sed -i.bak 's/\r$//' project_cleanup.sh
+./project_cleanup.sh
+```
