@@ -1,12 +1,12 @@
-# Part 3 — Kafka Data Pipeline: PostgreSQL to ClickHouse via Debezium CDC
+# Part 3: Data Engineering: From PostgreSQL to ClickHouse via Debezium CDC
 
 ## Overview
 
-In Part 2 we built a containerized microservices architecture where a
-producer published orders to Kafka and two consumers processed them —
+In Part 2 of the lab, we built a containerized microservices architecture where 
+a producer published orders to Kafka and two consumers processed them — 
 one sending notifications, and the other persisting to PostgreSQL.
 
-In Part 3 we will build a **data pipeline** on top of that foundation.
+In Part 3 of the lab, we will build a **data pipeline** on top of that foundation.
 Using **Debezium Change Data Capture (CDC)**, you will stream every change made
 to the PostgreSQL `orders` table into Kafka, transform the data, and
 load it into a ClickHouse data warehouse in real time.
@@ -15,7 +15,7 @@ The architecture is shown below.
 
 ---
 
-## Architecture
+## System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -80,8 +80,8 @@ internal change log — the **Write-Ahead Log (WAL)** — and streams
 every INSERT, UPDATE, and DELETE as an event to Kafka. The application
 never knows CDC is running.
 
-This is how large-scale data pipelines are built in practice: you
-capture change at the database level, not at the application level.
+This is how large-scale data pipelines are built in practice: **you
+capture changes at the database level, not at the application level.**
 
 ### Debezium
 
@@ -89,7 +89,7 @@ Debezium is a CDC platform that runs as a **Kafka Connect** plugin.
 It connects to PostgreSQL as a replication client, reads the WAL, and
 publishes every change as a structured JSON event to a Kafka topic.
 
-Each Debezium event has this structure:
+Each Debezium event is setup to have the following structure:
 
 ```json
 {
@@ -109,32 +109,34 @@ Each Debezium event has this structure:
 
 The `op` field tells you what kind of change occurred:
 
-| `op` | Meaning                                              |
-|------|------------------------------------------------------|
-| `r`  | Snapshot read — existing row read at connector start |
-| `c`  | Create — a new row was INSERTED                      |
-| `u`  | Update — an existing row was UPDATED                 |
-| `d`  | Delete — a row was DELETED                           |
+| `op` | Meaning                                                          |
+|------|------------------------------------------------------------------|
+| `c`  | Create — a new row was INSERTED                                  |
+| `r`  | Snapshot read — existing row read when the connector was started |
+| `u`  | Update — an existing row was UPDATED                             |
+| `d`  | Delete — a row was DELETED                                       |
 
 ### ClickHouse
 
 ClickHouse is a **columnar** database built for analytical queries.
 
-| Feature        | PostgreSQL (row store)       | ClickHouse (column store)          |
-|----------------|------------------------------|------------------------------------|
-| Storage layout | One row stored together      | One column stored together         |
-| Best for       | INSERT / SELECT single rows  | Aggregations over millions of rows |
-| Use case       | Transactional systems (OLTP) | Analytics and reporting (OLAP)     |
-| Example query  | "Fetch order #1234"          | "Total revenue by item this month" |
+| Feature        | PostgreSQL (row store)       | ClickHouse (column store)              |
+|----------------|------------------------------|----------------------------------------|
+| Storage layout | One row stored together      | One column stored together             |
+| Best for       | INSERT / SELECT single rows  | Aggregations over **millions** of rows |
+| Use case       | Transactional systems (OLTP) | Analytics and reporting (OLAP)         |
+| Example query  | "Fetch order #1234"          | "Total revenue by item this month"     |
 
 In a production data platform, PostgreSQL holds the live operational
 data and ClickHouse holds the historical analytical data for dashboards
 and reports.
 
+It is desirable to have the data in the data warehouse or data lake or data lakehouse be as close to real-time as possible. ***Analogy:** When crossing a road, you want to look both ways and have the most up-to-date information about oncoming traffic. If what you see is 1 hour old, then it is like looking both ways but only seeing where the cars were yesterday — and that is not very helpful for making decisions in the present.*
+
 ### The Transformation Step
 
-Raw Debezium events reflect the source database schema exactly. A
-transformation step exists to:
+Raw Debezium events reflect the source database schema as it is. A
+transformation step exists in the pipeline to:
 
 - **Rename fields** to match the warehouse naming convention
 - **Compute derived fields** that would be expensive to recalculate at query time
@@ -146,16 +148,16 @@ regulations in the **Kenya Data Protection Act**.
 
 etc.
 
-In `transformer.py`, the following transformations are applied:
+The following transformations are applied in the `transformer.py` script in this lab:
 
-| Transformation    | Source value                       | Warehouse value                |
-|-------------------|------------------------------------|--------------------------------|
-| Field rename      | `client_fname`                     | `customer_name`                |
-| Computed field    | `order_quantity`                   | `is_bulk_order` (qty > 5)      |
-| Timestamp         | Microseconds since epoch (integer) | Python `datetime` object       |
-| Added audit field | —                                  | `processed_at` (pipeline time) |
-| Added audit field | `op` code                          | `operation` (readable label)   |
-| Filter            | `op = "d"` (DELETE)                | Skipped entirely               |
+| Transformation    | Source value                       | Warehouse value                                                             |
+|-------------------|------------------------------------|-----------------------------------------------------------------------------|
+| Field rename      | `client_fname`                     | `customer_name`                                                             |
+| Computed field    | `order_quantity`                   | `is_bulk_order` (if `order_quantity` > 5 then true (1) else false (0))      |
+| Timestamp         | Microseconds since epoch (integer) | Python `datetime` object with a timezone (Nairobi time in this case; UTC+3) |
+| Added audit field | —                                  | `processed_at` (pipeline time)                                              |
+| Added audit field | `op` code                          | `operation` (readable label)                                                |
+| Filter            | `op = "d"` (DELETE)                | Skipped entirely                                                            |
 
 ---
 
@@ -169,6 +171,14 @@ the concepts in Part 2.
 
 ---
 
+
+Navigate into the Part 3 directory (`3_data_engineering`) first. All the 
+commands below assume that you are inside the `3_data_engineering` directory.
+
+```bash
+cd 3_data_engineering
+```
+
 ### Step 1 — Set Up Directories and Start the Stack
 
 ```bash
@@ -178,7 +188,6 @@ sed -i.bak 's/\r$//' project_setup.sh
 ./project_setup.sh
 
 # Build all images and start all services
-# docker-compose up --build
 docker compose -f docker-compose.yaml up --build \
   --scale producer=1 \
   --scale consumer-notification=1 \
@@ -205,6 +214,9 @@ docker-compose ps
 All services should show `healthy` or `running`. The Kafka Connect
 container (`kafka-connect`) takes approximately 60 seconds to fully
 initialize. Wait until it shows `healthy` before moving to Step 2.
+
+You can start a container manually by running `docker start <container-name>`
+or clicking the "Start" button in the Docker Desktop UI.
 
 ---
 
@@ -235,13 +247,15 @@ If you receive a connection error, wait 30 more seconds and try again.
 
 ### Step 3 — Register the Debezium Connector
 
-This is the step that activates CDC. You are telling Debezium which
-database and table to monitor.
+This is the step that **activates CDC**. You are basically telling Debezium 
+which database and table to monitor.
+
+The documentation of the connector configuration is available [here](kafka-connect/connector-config.json_documented_version.md).
 
 ```bash
 cd 3_data_engineering/
 chmod u+x kafka-connect/register-connector.sh
-sed -i.bak 's/\r$//' register-connector.sh
+sed -i 's/\r$//' register-connector.sh
 ./kafka-connect/register-connector.sh
 ```
 
@@ -304,7 +318,7 @@ docker exec kafka1 kafka-console-consumer \
   --max-messages 3
 ```
 
-Read the raw JSON output carefully. Identify the `payload.op`,
+Scheme through the raw JSON output. Identify the `payload.op`,
 `payload.before`, and `payload.after` fields. This is the exact input
 that `transformer.py` receives and processes.
 
@@ -359,9 +373,32 @@ exit;
 
 ### Step 6 — Observe the Live Pipeline
 
-At this point the full pipeline is running continuously. Open three
-terminal windows and run the following simultaneously to observe the
-end-to-end flow in real time.
+At this point the full pipeline is running continuously. Open connections
+to PostgreSQL and ClickHouse using DataGrip or any SQL client of your choice to
+observe the data in both databases in real time.
+
+![DataGrip Output](../assets/images/DataGrip_Output.png)
+
+You can also use the terminal to watch the data flow if you are using Linux or MacOS.
+
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/linux/linux-original.svg" width="40" />
+
+If you are using Linux:
+
+```bash
+sudo apt install procps
+```
+
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/apple/apple-original.svg" width="40"/> 
+
+If you are using MacOS:
+
+```bash
+brew install watch
+```
+
+Then open three terminal windows and run the following simultaneously to
+observe the end-to-end flow in real time.
 
 **Terminal 1 — Watch new orders arrive in PostgreSQL:**
 ```bash
@@ -382,7 +419,7 @@ watch -n 2 "docker exec clickhouse clickhouse-client \
   FROM orders ORDER BY processed_at DESC LIMIT 5'"
 ```
 
-You will see rows appearing in PostgreSQL and then — within seconds —
+You should see rows appearing in PostgreSQL and then — within seconds —
 appearing in ClickHouse with the applied transformations. The
 `customer_name` column will contain the renamed value and `is_bulk_order`
 will be set automatically based on the quantity.
@@ -391,7 +428,7 @@ will be set automatically based on the quantity.
 
 ### Step 7 — Observe CDC Operations (INSERT, UPDATE, DELETE)
 
-The producer only ever inserts new orders. To observe UPDATE and DELETE
+The producer only inserts new orders. To observe UPDATE and DELETE
 events flowing through the pipeline, run these commands manually.
 
 **Trigger an UPDATE:**
@@ -422,12 +459,9 @@ when the source database removes it.
 
 ---
 
-### Step 8 — Tear Down
+### Step 8 — Tear Down (Project Cleanup)
 
 ```bash
-# Stop all services but retain volume data
-docker-compose down
-
 # Stop all services AND delete all stored data
 docker-compose down -v
 ```

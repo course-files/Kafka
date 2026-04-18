@@ -10,7 +10,7 @@ services:
       - "29092:29092"
     environment:
       KAFKA_KRAFT_MODE: 'true'
-      CLUSTER_ID: 'q1Sh3IynR1ymjBBHFQaweg'
+      CLUSTER_ID: 'BBT4106'
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka1:9093,2@kafka2:9093,3@kafka3:9093
@@ -49,7 +49,7 @@ services:
       - "29093:29093"
     environment:
       KAFKA_KRAFT_MODE: 'true'
-      CLUSTER_ID: 'q1Sh3IynR1ymjBBHFQaweg'
+      CLUSTER_ID: 'BBT4106'
       KAFKA_NODE_ID: 2
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka1:9093,2@kafka2:9093,3@kafka3:9093
@@ -88,7 +88,7 @@ services:
       - "29094:29094"
     environment:
       KAFKA_KRAFT_MODE: 'true'
-      CLUSTER_ID: 'q1Sh3IynR1ymjBBHFQaweg'
+      CLUSTER_ID: 'BBT4106'
       KAFKA_NODE_ID: 3
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka1:9093,2@kafka2:9093,3@kafka3:9093
@@ -285,7 +285,7 @@ services:
       start_period: 30s
 
   # ---------------------------------------------------------------------------
-  # PRODUCER SERVICE LOCATED IN LAGOS, NIGERIA (EAT = UTC+1)
+  # PRODUCER SERVICE LOCATED IN LAGOS, NIGERIA (WAT = UTC+1)
   # ---------------------------------------------------------------------------
   # The Producer represents the Order Service running in Lagos.
   # It publishes order events with a produced_at timestamp in Lagos time.
@@ -307,7 +307,7 @@ services:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
-  # NOTIFICATION CONSUMER SERVICE IN LAGOS, NIGERIA (EAT = UTC+1)
+  # NOTIFICATION CONSUMER SERVICE IN LAGOS, NIGERIA (WAT = UTC+1)
   # ---------------------------------------------------------------------------
   consumer-notification:
     build:
@@ -326,7 +326,7 @@ services:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
-  # INVENTORY CONSUMER SERVICE IN LAGOS, NIGERIA (EAT = UTC+1)
+  # INVENTORY CONSUMER SERVICE IN LAGOS, NIGERIA (WAT = UTC+1)
   # ---------------------------------------------------------------------------
   consumer-inventory:
     build:
@@ -352,7 +352,7 @@ services:
   # TRANSFORMER SERVICE — CDC CONSUMER AND WAREHOUSE WRITER LOCATED IN NAIROBI,
   # KENYA (EAT = UTC+3)
   # ---------------------------------------------------------------------------
-  # This service is the heart of Lab 3. It:
+  # This service is the heart of Part 3. It:
   #   1. Subscribes to the Debezium CDC topic (dbserver1.public.orders)
   #   2. Parses the Debezium event envelope to extract the changed row
   #   3. Applies data transformations (see transformer.py for full details)
@@ -399,32 +399,32 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: ./container-volumes/kafka1/data
+      device: ./container-volumes/kafka1/var-lib-kafka-data
 
   kafka2_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ./container-volumes/kafka2/data
+      device: ./container-volumes/kafka2/var-lib-kafka-data
 
   kafka3_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ./container-volumes/kafka3/data
+      device: ./container-volumes/kafka3/var-lib-kafka-data
 
   postgres_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ./container-volumes/postgres/data
+      device: ./container-volumes/postgres/var-lib-postgresql-data
 
-  clickhouse_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: ./container-volumes/clickhouse/data
+#  clickhouse_data:
+#    driver: local
+#    driver_opts:
+#      type: none
+#      o: bind
+#      device: ./container-volumes/clickhouse/var-lib-clickhouse

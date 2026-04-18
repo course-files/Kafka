@@ -14,9 +14,6 @@
 # are healthy. Specifically, kafka-connect must be fully started before
 # this script will succeed.
 #
-# Usage:
-#   chmod +x register-connector.sh
-#   ./register-connector.sh
 # -----------------------------------------------------------------------------
 
 CONNECT_URL="http://localhost:8083/connectors"

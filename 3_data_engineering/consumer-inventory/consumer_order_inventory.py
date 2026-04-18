@@ -64,7 +64,7 @@ consumer_config = {
 
     # A separate consumer group from the Notification Service.
     # Both groups receive every message from the broker independently.
-    "group.id": "order-inventory",
+    "group.id": "order-inventories",
 
     "auto.offset.reset": "earliest",
 

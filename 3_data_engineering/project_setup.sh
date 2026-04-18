@@ -26,17 +26,17 @@ fi
 
 # Create directories
 mkdir -p \
-    "$BASE_DIR/kafka1/data" \
-    "$BASE_DIR/kafka2/data" \
-    "$BASE_DIR/kafka3/data" \
-    "$BASE_DIR/postgres/data" \
-    "$BASE_DIR/clickhouse/data"
+    "$BASE_DIR/kafka1/var-lib-kafka-data" \
+    "$BASE_DIR/kafka2/var-lib-kafka-data" \
+    "$BASE_DIR/kafka3/var-lib-kafka-data" \
+    "$BASE_DIR/postgres/var-lib-kafka-data" # \
+    # "$BASE_DIR/clickhouse/var-lib-clickhouse"
 
 echo "Setting permissions..."
 
 # Safe permission handling
 chmod -R 775 "$BASE_DIR"
-chown -R 1000:1000 "$BASE_DIR"
+# chown -R 1000:1000 "$BASE_DIR"
 
 # The ClickHouse container runs internally as user clickhouse with User ID: 101.
 # To ensure it can read/write to the data directory, we set ownership to 101:101.
