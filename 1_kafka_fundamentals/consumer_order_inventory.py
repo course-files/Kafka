@@ -33,11 +33,11 @@ consumer_config = {
     # The dinner is the topic. Each person eats a portion of the meal so that
     # the task of finishing it is shared. The whole meal is consumed in the end.
     #
-    # IMPORTANT: This consumer group ("order-inventory") is different from the
+    # IMPORTANT: This consumer group ("order-inventories") is different from the
     # one used in consumer_order_notification.py ("order-notifiers"). This means
     # that BOTH consumers will receive every message independently. This is the
     # publish-subscribe pattern: one event, many independent reactions.
-    "group.id": "order-inventory",
+    "group.id": "order-inventories",
 
     # "auto.offset.reset" specifies where the consumer should start reading
     # when there is no previously committed offset for the consumer group.
@@ -108,7 +108,7 @@ try:
         # database and deduct the ordered quantity from the current stock level.
         # For now, we simply print the action that would be taken.
         print(f"📦 Inventory updated: Deducted {order['order_quantity']} x "
-              f"{order['item']} for Order ID {order['order_id']}.")
+              f"{order['item']} for \nOrder ID {order['order_id']}.")
 
 except KeyboardInterrupt:
     print("\nStopping Order Inventory Service...")

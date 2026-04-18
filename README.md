@@ -14,6 +14,7 @@
 <p align="left">
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/apachekafka/apachekafka-original-wordmark.svg" width="40" />
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" width="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/docker/docker-original-wordmark.svg" width="40"/>
 </p>
 
 ## Repository Structure
@@ -26,6 +27,7 @@
 │   ├── docker-compose.yaml
 │   ├── instructions_for_project_setup.md
 │   ├── producer_order.py
+│   ├── project_cleanup.sh
 │   └── requirements.txt
 ├── 2_containerized_microservices
 │   ├── consumer-inventory
@@ -46,20 +48,64 @@
 │   │   ├── producer_order.py
 │   │   └── requirements.txt
 │   ├── project_cleanup.sh
-│   └── project_setup.sh
+│   ├── project_cleanup.sh.bak
+│   ├── project_setup.sh
+│   └── project_setup.sh.bak
+├── 3_data_engineering
+│   ├── clickhouse
+│   │   ├── config.d
+│   │   │   └── timezone.xml
+│   │   └── init.sql
+│   ├── consumer-inventory
+│   │   ├── Dockerfile.consumer-inventory
+│   │   ├── consumer_order_inventory.py
+│   │   ├── models.py
+│   │   └── requirements.txt
+│   ├── consumer-notification
+│   │   ├── Dockerfile.consumer-notification
+│   │   ├── consumer_order_notification.py
+│   │   └── requirements.txt
+│   ├── database
+│   │   └── init.sql
+│   ├── docker-compose.yaml
+│   ├── instructions_for_project_setup.md
+│   ├── kafka-connect
+│   │   ├── connector-config.json
+│   │   └── register-connector.sh
+│   ├── producer
+│   │   ├── Dockerfile.producer
+│   │   ├── producer_order.py
+│   │   └── requirements.txt
+│   ├── project_cleanup.sh
+│   ├── project_cleanup.sh.bak
+│   ├── project_setup.sh
+│   ├── project_setup.sh.bak
+│   └── transformer
+│       ├── Dockerfile.transformer
+│       ├── requirements.txt
+│       └── transformer.py
+├── 4_data_analytics
+│   ├── GUIDE.md
+│   ├── click_house_odbc_setup_guide_for_students.md
+│   ├── connect_clickhouse_with_ODBC.R
+│   ├── generate_data.py
+│   ├── lab4_analytics_with_odbc.Rmd
+│   └── lab4_analytics_with_odbc.nb.html
+├── Kafka.Rproj
 ├── LICENSE
 ├── README.md
-└── admin_instructions
-    ├── instructions_for_postlab_cleanup.md
-    ├── instructions_for_project_setup.md
-    └── instructions_for_python_installation.md
+├── admin_instructions
+│   ├── instructions_for_postlab_cleanup.md
+│   ├── instructions_for_project_setup.md
+│   └── instructions_for_python_installation.md
+└── lab_submission_instructions.md
 
-8 directories, 26 files
+18 directories, 61 files
 ```
 
 ## Setup Instructions
 
-- [Setup Instructions](./admin_instructions/instructions_for_project_setup.md)
+- [Setup Instructions](0_admin_instructions/0_instructions_for_project_setup.md)
 
 ## Lab Manual
 
@@ -68,6 +114,7 @@ Refer to the files below, in the order specified, for more details:
 1. [Part 1: Kafka Fundamentals](1_kafka_fundamentals/instructions_for_project_setup.md)
 2. [Part 2: Containerized Microservices](2_containerized_microservices/instructions_for_project_setup.md)
 3. [Part 3: Data Engineering using Kafka](3_data_engineering/instructions_for_project_setup.md)
+4. [Part 4: Data Analytics using R and ClickHouse](4_data_analytics/instructions_for_project_setup.md)
 
 ## Lab Submission Instructions
 
@@ -75,4 +122,4 @@ Refer to the files below, in the order specified, for more details:
 
 ## Cleanup Instructions (to be done after submitting the lab)
 
-- [Cleanup Instructions](/admin_instructions/instructions_for_postlab_cleanup.md)
+- [Cleanup Instructions](/0_admin_instructions/2_instructions_for_project_cleanup.md)

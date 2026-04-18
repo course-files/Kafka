@@ -1,0 +1,4 @@
+clickhouse_connect==0.15.1
+confluent_kafka==2.14.0
+psycopg2==2.9.11
+SQLAlchemy==2.0.49
