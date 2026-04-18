@@ -1,32 +1,16 @@
 # -----------------------------------------------------------------------------
 # ORDER PRODUCER SERVICE
 # -----------------------------------------------------------------------------
-# In a microservices architecture, this service represents the Order Service.
-# Its responsibility is to accept new orders and publish them as events to
-# the Kafka "orders" topic so that downstream services can react to them.
-#
-# In Part 1, this script ran directly on your host machine and connected to
-# a single Kafka broker via localhost:9092.
-#
-# In Part 2, this script runs inside a Docker container and connects to a
-# cluster of three Kafka brokers using their Docker service names (not to
-# localhost:9092).
-#
-# The key changes from Part 1 are (as we move towards a more production
-# ready setup):
-#   1. Bootstrap servers read from an environment variable (not hardcoded)
-#   2. 'acks': 'all' ensures full replication acknowledgment per message
-#   3. Orders are generated in a loop to demonstrate live message flow
-# -----------------------------------------------------------------------------
 #
 # TIMEZONE CONTEXT:
-#   This service runs on West Africa Time (WAT = UTC+1).
-#   The produced_at timestamp appended to each order reflects Lagos local time.
+#   This service runs on West Africa Time (WAT = UTC+1), specifically Lagos,
+#   Nigeria time. The produced_at timestamp appended to each order reflects
+#   Lagos local time.
 #
 #   LESSON TO LEARN: When this timestamp eventually reaches the Nairobi
 #   Transformer, it will be converted to East Africa Time (EAT = UTC+3).
 #   The same moment in time will appear 2 hours later on the clock.
-#   This is correct behaviour — not a data error.
+#   This is correct behavior — not a data error.
 # -----------------------------------------------------------------------------
 
 import os

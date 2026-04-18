@@ -1,15 +1,22 @@
 ---
 title: "Lab 4 — Data Analytics with R and ClickHouse"
-subtitle: "From Data Pipeline to Business Insights"
-author: "BBT 4106 — Business Information Technology"
+author: "Allan Omondi"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output:
+  pdf_document:
+    toc: true
+  word_document:
+    toc: true
+  html_document:
+    toc: true
+    df_print: paged
   html_notebook:
     toc: true
     toc_float: true
     theme: flatly
     highlight: tango
     number_sections: true
+subtitle: From Data Pipeline to Business Insights
 ---
 
 ```{r setup, include=FALSE}
@@ -26,7 +33,7 @@ knitr::opts_chunk$set(
 
 # Introduction
 
-In Labs 1 through 3 you built a complete data engineering pipeline that moves
+In Parts 1 through 3 you built a complete data engineering pipeline that moves
 orders from a producer, through Kafka, into PostgreSQL, and then into ClickHouse
 via Debezium CDC and a custom transformer service.
 
@@ -48,12 +55,12 @@ directly.
 # Setup: Load Libraries and Connect
 
 Run `connect_clickhouse_with_ODBC.R` first to establish `ch_conn` and `pg_conn`.
-The connection script now uses ODBC for ClickHouse. Then run this chunk to
-confirm both connections are available.
+The connection script uses ODBC for ClickHouse. Then run this chunk to confirm
+both connections are available.
 
-Before you begin: install the R package `odbc`, the ClickHouse ODBC driver, and
-on Linux/macOS the unixODBC driver manager. You can confirm that the driver is
-visible to R by executing: `odbc::odbcListDrivers()`.
+Before you begin: install the R package `odbc`, the **ClickHouse ODBC driver**,
+and on Linux/macOS the **unixODBC** driver manager. You can confirm that the
+driver is visible to R by executing: `odbc::odbcListDrivers()`.
 
 ```{r connections}
 library(DBI)
@@ -63,11 +70,11 @@ library(tidyverse)
 library(scales)
 library(bench)
 
-# These connections must already exist from connect_clickhouse.R.
-# If you see an error here, open connect_clickhouse.R and run it first.
+# These connections must already exist from connect_clickhouse_with_ODBC.R.
+# If you see an error here, open connect_clickhouse_with_ODBC.R and run it first.
 stopifnot(
-  "ch_conn not found — run connect_clickhouse.R first" = exists("ch_conn"),
-  "pg_conn not found — run connect_clickhouse.R first" = exists("pg_conn")
+  "ch_conn not found — run connect_clickhouse_with_ODBC.R first" = exists("ch_conn"),
+  "pg_conn not found — run connect_clickhouse_with_ODBC.R first" = exists("pg_conn")
 )
 
 # Confirm row counts
@@ -92,7 +99,9 @@ This section demonstrates that workflow using the ClickHouse warehouse.
 # Pull a representative sample for local exploration.
 # Note: for summarising the full dataset, we push computation to ClickHouse
 # using SQL and only bring the result into R. This is best practice —
-# never pull millions of rows into R when a database can compute the summary.
+# never pull millions of rows into R when a database can compute the 
+# summary for you. Otherwise, it beats the purpose of the business investing in
+# acquiring a powerful database server or data warehouse or data lake.
 overview <- dbGetQuery(ch_conn, "
   SELECT
     COUNT(*)                               AS total_orders,
@@ -763,7 +772,7 @@ representation of how data platforms are built in production environments.
 
 --------------------------------------------------------------------------------
 
-# Cleanup
+# Clean Up
 
 Always close database connections when you are finished.
 

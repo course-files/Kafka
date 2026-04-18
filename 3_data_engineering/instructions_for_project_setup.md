@@ -89,7 +89,7 @@ Debezium is a CDC platform that runs as a **Kafka Connect** plugin.
 It connects to PostgreSQL as a replication client, reads the WAL, and
 publishes every change as a structured JSON event to a Kafka topic.
 
-Each Debezium event is setup to have the following structure:
+Each Debezium event is set up to have the following structure:
 
 ```json
 {

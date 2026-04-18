@@ -172,7 +172,7 @@ def insert_clickhouse(client, batch):
 
 def main():
     print("=" * 70)
-    print("LAB 4 — BENCHMARK DATA GENERATOR")
+    print("PART 4 — BENCHMARK DATA GENERATOR")
     print(f"Generating {TOTAL_ROWS:,} synthetic orders...")
     print("=" * 70)
 

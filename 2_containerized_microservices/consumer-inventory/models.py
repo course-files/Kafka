@@ -43,6 +43,9 @@ class Order(Base):
     # not the time the order was originally placed.
     received_at    = Column(DateTime, default=datetime.datetime.utcnow)
 
+    # This is not part of the database logic. It is a way of telling Python that
+    # when we print an Order object, we want to see a nice string representation
+    # of its content as guided by the formatting.
     def __repr__(self):
         return (
             f"<Order(order_id='{self.order_id}', "
