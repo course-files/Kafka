@@ -1,10 +1,8 @@
 # requirements/colab.txt
--r https://raw.githubusercontent.com/course-files/ServingMLModels/refs/heads/main/requirements/base.txt
+-r https://raw.githubusercontent.com/course-files/Kafka/refs/heads/main/requirements/base.txt
 
 # Colab compatibility
-numpy<2.2
+# numpy<2.2
 
 # Colab-only additions
 # tensorflow
-# opencv-python
-gradio
