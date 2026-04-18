@@ -1,9 +1,8 @@
 # We need to install and import a library called "confluent_kafka".
 # "confluent_kafka" is a Python client for Apache Kafka developed and maintained
-# by Confluent. It provides a high-performance API for producing and consuming
-# Kafka messages.
+# by Confluent (https://www.confluent.io/product/stream/). It provides a high-performance API
+# for producing and consuming Kafka messages.
 
-# pip install confluent-kafka
 from confluent_kafka import Producer
 import uuid
 import json
@@ -44,7 +43,7 @@ order = {
 }
 
 # The order above is a Python dictionary. We need to convert it to a JSON
-# string first, and then encode it into Bytes, which is the format
+# string first and then encode it into Bytes, which is the format
 # that Kafka expects for message values.
 value = json.dumps(order).encode("utf-8")
 
@@ -63,7 +62,7 @@ key = order['order_id'].encode("utf-8")
 # setting "auto.create.topics.enable", which is set to True by default.
 # In production environments, this setting is typically disabled and topics
 # are created manually with explicitly defined configurations (e.g., number
-# of partitions, replication factor). We rely on it here for simplicity.
+# of partitions, replication factor, etc.). We rely on it here for simplicity.
 producer.produce(
     topic="orders",
     key=key,
@@ -77,8 +76,8 @@ producer.produce(
 # does not wait for the message to be sent before moving on. We call flush()
 # to force the producer to send all buffered messages before the program exits.
 # Without flush(), buffered messages could be lost when the program terminates.
-# TRY IT: Comment out flush() and run the script. Observe that the delivery
-# report is never printed, because the program exits before the message is sent.
+# TRY IT: Comment out flush() and then run the script. Observe that the delivery
+# report is never printed because the program exits before the message is sent.
 producer.flush()
 
 

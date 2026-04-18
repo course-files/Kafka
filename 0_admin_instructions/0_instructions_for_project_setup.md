@@ -16,14 +16,14 @@
     python3 --version
     ```
 
-    or (for Windows - Replace **Python312** (Python version 3.12) with the Python version you want to use)
+    or (for Windows – Replace **Python312** (Python version 3.12) with the Python version you want to use)
 
     ```shell
     '/C/Python312/python.exe' --version
     ```
 
     - If Python is not installed (i.e., you do not see any version number),
-   then refer to [instructions_for_python_installation.md](instructions_for_python_installation.md) for a guide on installing multiple python versions for the labs.
+   then refer to [Instructions for Python Installation](1_instructions_for_python_installation.md) for a guide on installing multiple python versions for the labs.
 
 2. Create and activate a **virtual environment** to keep your project
 dependencies isolated from the system Python packages.
@@ -68,37 +68,39 @@ dependencies isolated from the system Python packages.
 
    - If you want to use a specific python version to create your virtual environment, then use the python interpreter located in the correct path.
 
-     - Example to create a virtual environment that will use Python Version 3.12 in Windows:
+     - Example of creating a virtual environment that will use Python Version 3.12 in Windows OS:
 
       ```shell
       /C/Python312/python.exe -m venv .venv
       ```
 
-     - Example to create a virtual environment that will use Python Version 3.14 in Windows:
+     - Example of creating a virtual environment that will use Python Version 3.14 in Windows OS:
 
       ```shell
       /C/Python314/python.exe -m venv .venv
       ```
 
-     - Example to create a virtual environment that will use Python Version 3.12.10 in Linux:
+     - Example of creating a virtual environment that will use Python Version 3.12.10 in Linux:
 
       ```shell
-      mkdir ~/Documents/project_folder
-      cd ~/Documents/project_folder
+      # Ensure you are in the project directory first
       pyenv local 3.12.10
       python --version
       python -m venv .venv
       ```
 
-     - Example to create a virtual environment that will use Python Version 3.14.3 in Linux:
+     - Example of creating a virtual environment that will use Python Version 3.14.3 in Linux:
 
       ```shell
-      mkdir ~/Documents/project_folder
-      cd ~/Documents/project_folder
+      # Ensure you are in the project directory first
       pyenv local 3.14.3
       python --version
       python -m venv .venv
       ```
+
+   - If you have multiple Python virtual environments, you can decide to name
+   them differently instead of `.venv` to avoid confusion. For example, you can
+   name them `.venv_3.12` and `.venv_3.14`.
 
    **Part B**
 
@@ -142,7 +144,7 @@ dependencies isolated from the system Python packages.
          which python
          ```
 
-      **Part C**
+   **Part C**
 
    - When you create and activate a virtual environment (.venv) in your
    terminal, you are telling your terminal to use that Python interpreter for the
@@ -152,13 +154,13 @@ dependencies isolated from the system Python packages.
    - That is why PyCharm may still ask you to configure one. To PyCharm, a
    .venv folder is just another directory until you explicitly say,
    “this is the interpreter I want to use.”
-   - Do the following to set the Python Interpret if you are using **PyCharm**
+   - Do the following to set the Python Interpreter if you are using **PyCharm**
    as your IDE:
      - Go to File > Settings > Python > Interpreter.
      - Click Add Interpreter → Add Local Interpreter → Select Existing
      - Select Python as the Type
      - For the Python path: Browse to your `.venv/bin/python` (on **Linux/Mac**) or `.venv\Scripts\python.exe` (on **Windows**).
-     - Select it and apply.
+     - Select it and apply it.
 
 3. Activate the virtual environment through your chosen IDE.
 
@@ -178,14 +180,15 @@ dependencies isolated from the system Python packages.
      - Choose the interpreter that points to your `.venv` folder.
      ![img.png](https://raw.githubusercontent.com/course-files/classlab/refs/heads/main/assets/images/activate_venv_vscode.png)
 
-4. Set the correct environment by creating a `.env` file in the root of the repository. Add the values of the variables listed in [.env.example](.env.example) as discussed in class:
+4. Set the correct environment by creating a `.env` file in the root of the repository. Add the values of the variables listed in [.env.example](/.env.example) as discussed in class:
 
 5. Install the required packages depending on the environment:
-    - [base.txt](requirements/base.txt): Defines the fundamental packages that the code in the repository needs to be installed for it to run. It is: Environment-agnostic, developer-curated, stable, and minimal.
-    - [dev.txt](requirements/dev.txt): Defines what a developer needs to work productively and safely. It can include linters, formatters, test frameworks, and interactive tools. It should not include platform-specific constraints or deployment-only dependencies.
-    - [colab.txt](requirements/colab.txt): It is platform-specific for Google Colab. It specifies the adjustments required when you are running the notebook in Colab, e.g., packages that are not included in Colab by default, and compatibility pins to avoid breaking Colab.
-    - [prod.txt](requirements/prod.txt): Defines what must be installed in a production environment. It includes runtime frameworks (TensorFlow).
-    - Governing Rule: If the application code imports it to run, it belongs in base.txt. If only a developer uses it to think, test, or explore, it belongs in dev.txt.
+    - [base.txt](../requirements/base.txt): Defines the fundamental packages that the code in the repository needs to be installed for it to run. It is: Environment-agnostic, developer-curated, stable, and minimal.
+    - [dev.txt](../requirements/dev.txt): Defines what a developer needs to work productively and safely. It can include linters, formatters, test frameworks, and interactive tools. It should not include platform-specific constraints or deployment-only dependencies.
+    - [colab.txt](../requirements/colab.txt): It is platform-specific for Google Colab. It specifies the adjustments required when you are running the notebook in Colab, e.g., packages that are not included in Colab by default, and compatibility pins to avoid breaking Colab.
+    - [prod.txt](../requirements/prod.txt): Defines what must be installed in a production environment. It includes runtime frameworks (TensorFlow).
+    - [constraints.txt](../requirements/constraints.txt): Defines the exact versions of packages to ensure compatibility and reproducibility across environments. It is used as a constraint file to pin versions when installing from dev.txt or prod.txt.
+    - **Governing Rule:** If the application code imports it to run, it belongs in base.txt. If only a developer uses it to think, test, or explore, it belongs in dev.txt.
 
     - Run one of the following depending on your environment once the virtual environment is active (**Note:** you should be using a "development" environment to do the lab):
   
@@ -225,7 +228,13 @@ dependencies isolated from the system Python packages.
    pip list
    ```
 
+---
+
 ## Project Creation Instructions
+
+***Note:** This is for use when you are creating your own new project. You can skip this
+section if you are only cloning the repository for the lab and following the
+instructions to set it up.*
 
 ### Creating a Project Structure using `tree`
 
@@ -234,7 +243,7 @@ dependencies isolated from the system Python packages.
 3. Navigate to the project's root folder using the MSYS2 terminal.
 
 ```shell
-tree -I ".venv|__pycache__|roughwork|lab_submission_ANSWERS"
+tree -I ".venv|__pycache__|sandbox|lab_submission_ANSWERS|*.bak"
 ```
 
 ## Creating a `requirements.txt` File
@@ -251,7 +260,7 @@ tree -I ".venv|__pycache__|roughwork|lab_submission_ANSWERS"
   - Example: Inside the NumPy package, you find all the mathematical functions (arrays, linear algebra, random number generators).
 
 - When you create a `requirements.txt` file, you are making a "shopping list" of packages — the bags you must bring from the store.
-- And when you write Python code, you are actually cooking with the ingredients (libraries) inside those packages.
+- And when you write Python code, you are "cooking with the ingredients" (libraries) inside those packages.
 
 **Option 1: Using `pipreqs`**
 
@@ -271,7 +280,7 @@ tree -I ".venv|__pycache__|roughwork|lab_submission_ANSWERS"
   - Does not guarantee reproducibility
 
 ```shell
-pipreqs . --savepath ./requirements/dev.inferred.txt --encoding=utf8 --force --ignore .venv,__pycache__,roughwork
+pipreqs . --savepath ./requirements/dev.inferred.txt --encoding=utf8 --force --ignore .venv,__pycache__,sandbox
 ```
 
 **Option 2: Using `pip freeze`**

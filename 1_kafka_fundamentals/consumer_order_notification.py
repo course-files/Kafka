@@ -24,7 +24,7 @@ consumer_config = {
     # the task of finishing it is shared. The whole meal is consumed in the end.
     #
     # IMPORTANT: This consumer group ("order-notifiers") is different from the
-    # one used in consumer_order_inventory.py ("order-inventory"). This means
+    # one used in consumer_order_inventory.py ("order-inventories"). This means
     # that BOTH consumers will receive every message independently. This is the
     # publish-subscribe pattern: one event, many independent reactions.
     "group.id": "order-notifiers",
@@ -98,7 +98,8 @@ try:
         # In a real Notification Service, this is where you would trigger an
         # email, an SMS, or a push notification. For now, we simply print.
         print(f"📧 Notification sent: Order of {order['order_quantity']} x "
-              f"{order['item']} received from {order['client_fname']}.")
+              f"{order['item']} for {order['client_fname']} has been received.\n"
+              f" Order ID: {order['order_id']}")
 
 except KeyboardInterrupt:
     print("\nStopping Order Notification Service...")
