@@ -31,12 +31,13 @@ DATABASE_URL     = os.environ.get('DATABASE_URL')
 BOOTSTRAP_SERVERS = os.environ.get('BOOTSTRAP_SERVERS', 'localhost:9092')
 
 # create_engine() establishes the connection configuration to PostgreSQL.
-# No actual connection is made yet — SQLAlchemy connects lazily when needed.
+# No actual connection is made yet at  this point — SQLAlchemy connects lazily
+# when needed.
 engine = create_engine(DATABASE_URL)
 
 # create_all() inspects the database and creates any tables defined in our
 # models that do not already exist. Since init.sql already created the
-# "orders" table, this call is a no-op. It acts as a safety net in case
+# "orders" table, this call acts as a safety net in case
 # the database was started without the init.sql script.
 Base.metadata.create_all(engine)
 

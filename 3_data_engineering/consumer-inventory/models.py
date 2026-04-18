@@ -16,12 +16,6 @@
 #
 #   DateTime(timezone=True) maps to TIMESTAMPTZ in PostgreSQL — a column
 #   type that stores the UTC offset alongside the timestamp value.
-#
-# TEACHING POINT:
-#   Query the received_at column in both PostgreSQL and ClickHouse.
-#   PostgreSQL will show the time in Lagos WAT (UTC+1).
-#   ClickHouse will show the same moment in Nairobi EAT (UTC+3).
-#   The underlying UTC value is identical. Only the display timezone differs.
 # -----------------------------------------------------------------------------
 import os
 from datetime import datetime
@@ -29,7 +23,6 @@ from zoneinfo import ZoneInfo
 from sqlalchemy import Column, String, Integer, DateTime
 from sqlalchemy.orm import DeclarativeBase
 
-# Lagos, Nigeria — WAT (UTC+1)
 # The TIMEZONE variable is injected by docker-compose from the .env file.
 TIMEZONE_NAME = os.environ.get('TIMEZONE', 'Africa/Lagos')
 TZ = ZoneInfo(TIMEZONE_NAME)
@@ -61,9 +54,14 @@ class Order(Base):
     # read by services in different timezones.
     received_at = Column(
         DateTime(timezone=True),
+        # lambda enables us to call the now() function every time a new record
+        # is inserted, and use its return value.”
         default=lambda: datetime.now(tz=TZ)
     )
 
+    # This is not part of the database logic. It is a way of telling Python that
+    # when we print an Order object, we want to see a nice string representation
+    # of its content as guided by the formatting.
     def __repr__(self):
         return (
             f"<Order(order_id='{self.order_id}', "

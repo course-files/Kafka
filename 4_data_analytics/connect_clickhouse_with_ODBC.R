@@ -8,24 +8,24 @@
 #   Cmd+Enter (macOS) in RStudio.
 #
 # PREREQUISITES:
-#   1. The Part 3 Docker stack must be running (docker compose up -d)
+#   1. The stack of containers from Part 3 must be running (docker-compose up -d)
 #   2. The benchmark data generator must have completed (python generate_data.py)
 #   3. The following R packages must be installed:
 #
-#      install.packages(c("DBI", "RPostgres", "odbc", "tidyverse", "scales", "bench", "knitr"))
+     install.packages(c(
+     "DBI",          # Standard R database interface
+     "RPostgres",    # PostgreSQL driver
+     # "clickhouse",   # ClickHouse driver (uses HTTP interface on port 8123)
+     "odbc",          # ODBC interface for ClickHouse (uses HTTP interface on port 8123)
+     "tidyverse",    # Data manipulation and ggplot2 visualisation
+     "scales",       # Axis formatting helpers for ggplot2
+     "knitr",        # R Notebook rendering
+     "bench"         # Precise benchmarking with statistical summaries
+     ))
 #
-#      install.packages(c(
-#      "DBI",          # Standard R database interface
-#      "RPostgres",    # PostgreSQL driver
-#      # "clickhouse",   # ClickHouse driver (uses HTTP interface on port 8123)
-#      "tidyverse",    # Data manipulation and ggplot2 visualisation
-#      "scales",       # Axis formatting helpers for ggplot2
-#      "knitr",        # R Notebook rendering
-#      "bench"         # Precise benchmarking with statistical summaries
-#      ))
 # NOTE:
-#   ClickHouse access is now done through ODBC. The ClickHouse ODBC driver
-#   must also be installed on the student machine.
+#   ClickHouse access is done through ODBC. The ClickHouse ODBC driver
+#   must have already been installed.
 # =============================================================================
 
 # -----------------------------------------------------------------------------
