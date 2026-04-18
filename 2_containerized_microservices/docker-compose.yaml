@@ -292,25 +292,25 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: ./container-volumes/kafka1/data
+      device: ./container-volumes/kafka1/var-lib-kafka-data
 
   kafka2_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ./container-volumes/kafka2/data
+      device: ./container-volumes/kafka2/var-lib-kafka-data
 
   kafka3_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ./container-volumes/kafka3/data
+      device: ./container-volumes/kafka3/var-lib-kafka-data
 
   postgres_data:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: ./container-volumes/postgres/data
+      device: ./container-volumes/postgres/var-lib-postgresql-data

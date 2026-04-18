@@ -9,10 +9,10 @@ BASE_DIR="$SCRIPT_DIR/container-volumes"
 
 echo "Creating volume directories..."
 
-mkdir -p "$BASE_DIR/kafka1/data"
-mkdir -p "$BASE_DIR/kafka2/data"
-mkdir -p "$BASE_DIR/kafka3/data"
-mkdir -p "$BASE_DIR/postgres/data"
+mkdir -p "$BASE_DIR/kafka1/var-lib-kafka-data"
+mkdir -p "$BASE_DIR/kafka2/var-lib-kafka-data"
+mkdir -p "$BASE_DIR/kafka3/var-lib-kafka-data"
+mkdir -p "$BASE_DIR/postgres/var-lib-postgresql-data"
 
 echo "Setting permissions..."
 chmod -R 755 "$BASE_DIR"
