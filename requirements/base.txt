@@ -1,2 +1,4 @@
 # requirements/base.txt
 confluent-kafka
+psycopg2-binary
+clickhouse-connect
