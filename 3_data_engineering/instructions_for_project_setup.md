@@ -17,53 +17,7 @@ The architecture is shown below.
 
 ## System Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         Docker Network                              │
-│                                                                     │
-│  ┌──────────┐   orders    ┌───────────────────────────────────────┐ │
-│  │ producer │────────────▶│         Kafka Cluster                 │ │
-│  └──────────┘   topic     │   kafka1  │  kafka2  │  kafka3        │ │
-│                           └───────────────────────────────────────┘ │
-│                                   │                    │            │
-│                    ┌──────────────┘                    │            │
-│                    ▼                                   ▼            │
-│           ┌────────────────┐              ┌────────────────────┐    │
-│           │ consumer-      │              │ consumer-          │    │
-│           │ notification   │              │ inventory          │    │
-│           └────────────────┘              └─────────┬──────────┘    │
-│                                                     │               │
-│                                                     ▼               │
-│                                            ┌─────────────────┐      │
-│                                            │   PostgreSQL    │      │
-│                                            │ (orders table)  │      │
-│                                            └────────┬────────┘      │
-│                                                     │               │
-│                                            WAL logical stream       │
-│                                                     │               │
-│                                                     ▼               │
-│                                            ┌─────────────────┐      │
-│                                            │  Kafka Connect  │      │
-│                                            │  + Debezium     │      │
-│                                            │  (CDC engine)   │      │
-│                                            └────────┬────────┘      │
-│                                                     │               │
-│                                   dbserver1.public.orders topic     │
-│                                                     │               │
-│                                                     ▼               │
-│                                            ┌─────────────────┐      │
-│                                            │  Transformer    │      │
-│                                            │  Service        │      │
-│                                            │  (Python)       │      │
-│                                            └────────┬────────┘      │
-│                                                     │               │
-│                                                     ▼               │
-│                                            ┌─────────────────┐      │
-│                                            │   ClickHouse    │      │
-│                                            │ (data warehouse)│      │
-│                                            └─────────────────┘      │
-└─────────────────────────────────────────────────────────────────────┘
-```
+![System Architecture](../assets/images/SystemArchitecture.png)
 
 ---
 
