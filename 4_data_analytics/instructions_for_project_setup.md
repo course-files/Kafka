@@ -311,25 +311,3 @@ These numbers will vary depending on your machine, but ClickHouse should be
 substantially faster — typically 10× to 50× on a 500,000-row table. On a
 production warehouse with billions of rows, this gap widens to several orders
 of magnitude.
-
-## Exercises
-
-1. Modify the aggregation query to group by `customer_name` instead of `item`.
-   Which customer has placed the highest total quantity of orders? Run this on
-   both databases and record the times.
-
-2. Add a filter to the ClickHouse query: `WHERE is_bulk_order = 1`. How does
-   filtering on a computed column affect performance compared to the unfiltered
-   query?
-
-3. Write a ClickHouse query that computes the average `order_quantity` per item
-   for each operation type (INSERT, UPDATE, SNAPSHOT). What does this tell you
-   about the data distribution?
-
-4. The `processed_at - received_at` gap represents pipeline latency. Write an R
-   query that computes the average latency in seconds for each item. Which item
-   has the highest average latency and why might that be?
-
-5. Using the benchmark results, extrapolate: if the 500,000-row query takes X
-   seconds on PostgreSQL, approximately how long would a 50,000,000-row query
-   take? Is PostgreSQL a viable tool for that scale of analytics?
