@@ -10,7 +10,7 @@ Navigate into the Part 1 directory (`1_kafka_fundamentals`) first. All the
 commands below assume that you are inside the `1_kafka_fundamentals` directory.
 
 ```bash
-cd 1_kafka_fundamentals/
+cd 1_kafka_fundamentals_old/
 ```
 
 ## Step 1: Install the Dependencies

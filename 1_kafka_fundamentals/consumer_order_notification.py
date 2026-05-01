@@ -10,6 +10,9 @@
 from confluent_kafka import Consumer
 import json
 
+# We inform the consumer of the location of the initial host that acts as the
+# starting point for a cosumer to discover the full set of alive Kafka
+# servers in the cluster.
 consumer_config = {
     "bootstrap.servers": "localhost:9092",
 
@@ -34,9 +37,9 @@ consumer_config = {
     # This typically happens the very first time a consumer group runs.
     #
     # Options:
-    #   "earliest" : Start from the very first message available in the topic.
-    #   "latest"   : Start from the next new message (ignore existing messages).
-    #   "none"     : Throw an exception if no previous offset is found.
+    #   "earliest": Start from the very first message available in the topic.
+    #   "latest": Start from the next new message (ignore existing messages).
+    #   "none": Throw an exception if no previous offset is found.
     #
     # We use "earliest" so that you always receive messages even if you started
     # this consumer after the producer had already run. This is the safest
@@ -61,50 +64,60 @@ consumer_config = {
     "enable.auto.commit": True
 }
 
-consumer = Consumer(consumer_config)
+def process_order_message(msg_value):
+    """
+    Converts raw bytes to a notification string.
+    """
+    # The message value arrives as Bytes.
+    # We decode it back into a UTF-8 string first.
+    value = msg_value.value().decode("utf-8")
 
-consumer.subscribe(["orders"])
+    # We then convert the JSON string into a Python dictionary so we can
+    # access individual fields by their key names.
+    order = json.loads(value)
 
-print("-" * 75)
-print("Order Notification Service is running. Subscribed to 'orders' topic.")
-print("-" * 75)
+    # In a real Notification Service, this is where you would trigger an
+    # email, an SMS, or a push notification. For now, we simply print.
+    print(f"📧 Notification sent: Order of {order['order_quantity']} x "
+          f"{order['item']} for {order['client_fname']} has been received.\n"
+          f" Order ID: {order['order_id']}")
 
-try:
-    while True:
-        # poll() asks the broker for any new messages on the subscribed topics.
-        # The argument (1.0) is the maximum number of seconds to wait for a
-        # new message before returning. If no message arrives within that time,
-        # poll() returns None and the loop continues.
-        #
-        # NOTE: The broker does not push messages to consumers automatically.
-        # The consumer must poll to request them. This gives the consumer full
-        # control over the rate at which it reads and processes messages.
-        msg = consumer.poll(1.0)
+def main():
+    consumer = Consumer(consumer_config)
 
-        if msg is None:
-            continue
-        if msg.error():
-            print("❌ Error: {}".format(msg.error()))
-            continue
+    consumer.subscribe(["orders"])
 
-        # The message value arrives as Bytes.
-        # We decode it back into a UTF-8 string first.
-        value = msg.value().decode("utf-8")
+    print("-" * 75)
+    print("Order Notification Service is running. Subscribed to 'orders' topic.")
+    print("-" * 75)
 
-        # We then convert the JSON string into a Python dictionary so we can
-        # access individual fields by their key names.
-        order = json.loads(value)
+    try:
+        while True:
+            # poll() asks the broker for any new messages on the subscribed topics.
+            # The argument (1.0) is the maximum number of seconds to wait for a
+            # new message before returning. If no message arrives within that time,
+            # poll() returns None and the loop continues.
+            #
+            # NOTE: The broker does not push messages to consumers automatically.
+            # The consumer must poll to request them. This gives the consumer full
+            # control over the rate at which it reads and processes messages.
+            msg = consumer.poll(1.0)
 
-        # In a real Notification Service, this is where you would trigger an
-        # email, an SMS, or a push notification. For now, we simply print.
-        print(f"📧 Notification sent: Order of {order['order_quantity']} x "
-              f"{order['item']} for {order['client_fname']} has been received.\n"
-              f" Order ID: {order['order_id']}")
+            if msg is None:
+                continue
+            if msg.error():
+                print("❌ Error: {}".format(msg.error()))
+                continue
 
-except KeyboardInterrupt:
-    print("\nStopping Order Notification Service...")
-finally:
-    # Closing the consumer is mandatory. It releases network connections and
-    # file handles, commits any pending offsets, and revokes the consumer's
-    # partition assignments so other consumers in the group can take over.
-    consumer.close()
+            process_order_message(msg)
+
+    except KeyboardInterrupt:
+        print("\nStopping Order Notification Service...")
+    finally:
+        # Closing the consumer is mandatory. It releases network connections and
+        # file handles, commits any pending offsets, and revokes the consumer's
+        # partition assignments so other consumers in the group can take over.
+        consumer.close()
+
+if __name__ == "__main__":
+    main()
