@@ -20,7 +20,12 @@ Then install the dependencies.
 pip install -r requirements.txt
 ```
 
-## Step 2: Execute the Project Setup Script
+## Step 2: Run Unit Tests
+
+Refer to the following instructions to run the unit tests:
+[instructions_for_running_unit_tests.md](instructions_for_running_unit_tests.md)
+
+## Step 3: Execute the Project Setup Script
 
 ```bash
 # This is executed to create the required volume directories
@@ -29,7 +34,7 @@ sed -i 's/\r$//' project_setup.sh
 ./project_setup.sh
 ```
 
-## Step 3: Start the Kafka Service
+## Step 4: Start the Kafka Service
 
 Use the `confluentinc/cp-kafka` image to create a Kafka container. 
 The Kafka container uses **KRaft** as the consensus mechanism instead of using **Zookeeper**.
@@ -38,20 +43,20 @@ The Kafka container uses **KRaft** as the consensus mechanism instead of using *
 docker compose -f docker-compose.yaml up --build
 ```
 
-## Step 4: Start the Consumers
+## Step 5: Start the Consumers
 
 ```bash
 python consumer_order_notification.py
 python consumer_order_inventory.py
 ```
 
-## Step 5: Start the Producer
+## Step 6: Start the Producer
 
 ```bash
 python producer_order.py
 ```
 
-## Step 6: Project Cleanup
+## Step 7: Project Cleanup
 
 ```bash
 # Stop all services AND delete all stored data

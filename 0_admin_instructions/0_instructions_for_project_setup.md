@@ -243,7 +243,7 @@ instructions to set it up.*
 3. Navigate to the project's root folder using the MSYS2 terminal.
 
 ```shell
-tree -I ".venv|__pycache__|sandbox|lab_submission_ANSWERS|*.bak"
+tree -I ".venv|__pycache__|sandbox|lab_submission_ANSWERS|container-volumes|*.bak"
 ```
 
 ## Creating a `requirements.txt` File
