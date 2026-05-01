@@ -44,9 +44,9 @@ consumer_config = {
     # This typically happens the very first time a consumer group runs.
     #
     # Options:
-    #   "earliest" : Start from the very first message available in the topic.
-    #   "latest"   : Start from the next new message (ignore existing messages).
-    #   "none"     : Throw an exception if no previous offset is found.
+    #   "earliest": Start from the very first message available in the topic.
+    #   "latest": Start from the next new message (ignore existing messages).
+    #   "none": Throw an exception if no previous offset is found.
     #
     # We use "earliest" so that you always receive messages even if you started
     # this consumer after the producer had already run. This is the safest
@@ -59,7 +59,7 @@ consumer_config = {
     # it left off rather than re-reading all messages from the beginning.
     #
     # "enable.auto.commit" is True by default. We set it explicitly here so
-    # that it is visible and not a hidden behaviour.
+    # that it is visible and not a hidden behavior.
     #
     # IMPORTANT: Auto-commit saves the offset on a time interval (every 5
     # seconds by default), NOT immediately after a message is processed.
@@ -70,50 +70,60 @@ consumer_config = {
     "enable.auto.commit": True
 }
 
-consumer = Consumer(consumer_config)
+def process_order_message(msg_value):
+    """
+    Converts raw bytes to a notification string.
+    """
+    # The message value arrives as Bytes.
+    # We decode it back into a UTF-8 string first.
+    value = msg_value.value().decode("utf-8")
 
-consumer.subscribe(["orders"])
+    # We then convert the JSON string into a Python dictionary so we can
+    # access individual fields by their key names.
+    order = json.loads(value)
 
-print("-" * 75)
-print("Order Inventory Service is running. Subscribed to 'orders' topic.")
-print("-" * 75)
+    # In a real Inventory Service, this is where you would connect to a
+    # database and deduct the ordered quantity from the current stock level.
+    # For now, we simply print the action that would be taken.
+    print(f"📦 Inventory updated: Deducted {order['order_quantity']} x "
+          f"{order['item']} for \nOrder ID {order['order_id']}.")
 
-try:
-    while True:
-        # poll() asks the broker for any new messages on the subscribed topics.
-        # The argument (1.0) is the maximum number of seconds to wait for a
-        # new message before returning. If no message arrives within that time,
-        # poll() returns None and the loop continues.
-        #
-        # NOTE: The broker does not push messages to consumers automatically.
-        # The consumer must poll to request them. This gives the consumer full
-        # control over the rate at which it reads and processes messages.
-        msg = consumer.poll(1.0)
+def main():
+    consumer = Consumer(consumer_config)
 
-        if msg is None:
-            continue
-        if msg.error():
-            print("❌ Error: {}".format(msg.error()))
-            continue
+    consumer.subscribe(["orders"])
 
-        # The message value arrives as Bytes.
-        # We decode it back into a UTF-8 string first.
-        value = msg.value().decode("utf-8")
+    print("-" * 75)
+    print("Order Inventory Service is running. Subscribed to 'orders' topic.")
+    print("-" * 75)
 
-        # We then convert the JSON string into a Python dictionary so we can
-        # access individual fields by their key names.
-        order = json.loads(value)
+    try:
+        while True:
+            # poll() asks the broker for any new messages on the subscribed topics.
+            # The argument (1.0) is the maximum number of seconds to wait for a
+            # new message before returning. If no message arrives within that time,
+            # poll() returns None and the loop continues.
+            #
+            # NOTE: The broker does not push messages to consumers automatically.
+            # The consumer must poll to request them. This gives the consumer full
+            # control over the rate at which it reads and processes messages.
+            msg = consumer.poll(1.0)
 
-        # In a real Inventory Service, this is where you would connect to a
-        # database and deduct the ordered quantity from the current stock level.
-        # For now, we simply print the action that would be taken.
-        print(f"📦 Inventory updated: Deducted {order['order_quantity']} x "
-              f"{order['item']} for \nOrder ID {order['order_id']}.")
+            if msg is None:
+                continue
+            if msg.error():
+                print("❌ Error: {}".format(msg.error()))
+                continue
 
-except KeyboardInterrupt:
-    print("\nStopping Order Inventory Service...")
-finally:
-    # Closing the consumer is mandatory. It releases network connections and
-    # file handles, commits any pending offsets, and revokes the consumer's
-    # partition assignments so other consumers in the group can take over.
-    consumer.close()
+            process_order_message(msg)
+
+    except KeyboardInterrupt:
+        print("\nStopping Order Inventory Service...")
+    finally:
+        # Closing the consumer is mandatory. It releases network connections and
+        # file handles, commits any pending offsets, and revokes the consumer's
+        # partition assignments so other consumers in the group can take over.
+        consumer.close()
+
+if __name__ == "__main__":
+    main()
