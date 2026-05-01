@@ -20,7 +20,7 @@
 
 ## System Architecture
 
-![System Architecture](assets/images/SystemArchitecture.png)
+![System Architecture](assets/images/SystemArchitecture.jpg)
 
 
 ## Repository Structure
@@ -39,7 +39,10 @@
 │   ├── producer_order.py
 │   ├── project_cleanup.sh
 │   ├── project_setup.sh
-│   └── requirements.txt
+│   ├── requirements.txt
+│   ├── test_consumer_order_inventory.py
+│   ├── test_consumer_order_notification.py
+│   └── test_producer_order.py
 ├── 2_containerized_microservices
 │   ├── consumer-inventory
 │   │   ├── Dockerfile.consumer-inventory
@@ -104,6 +107,7 @@
 ├── assets
 │   └── images
 │       ├── DataGrip_Output.png
+│       ├── SystemArchitecture.jpg
 │       └── SystemArchitecture.png
 ├── lab_submission_instructions.md
 ├── project_cleanup.sh
@@ -116,7 +120,7 @@
     ├── dev.txt
     └── prod.txt
 
-21 directories, 68 files
+21 directories, 72 files
 ```
 
 ## Setup Instructions

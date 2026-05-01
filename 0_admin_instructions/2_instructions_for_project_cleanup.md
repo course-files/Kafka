@@ -15,8 +15,8 @@ been officially released to implement the cleanup in all the labs.*
 Clean up Part 1 of the lab:
 
 ```bash
-# Ensure you are in the 1_kafka_fundamentals_old directory first
-cd 1_kafka_fundamentals_old
+# Ensure you are in the 1_kafka_fundamentals directory first
+cd 1_kafka_fundamentals
 chmod u+x project_cleanup.sh
 sed -i 's/\r$//' project_cleanup.sh
 ./project_cleanup.sh
