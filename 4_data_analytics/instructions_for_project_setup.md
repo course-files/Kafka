@@ -142,8 +142,13 @@ If you do NOT see this, then:
 
 ## Step 5: Ensure Docker Services Are Running
 
-Navigate into the Part 3 directory (`3_data_engineering`) first. All the 
-commands below assume that you are inside the `3_data_engineering` directory.
+Navigate into the Part 3 directory (`3_data_engineering`) first.
+
+```bash
+cd 3_data_engineering/
+```
+All the commands below assume that you are inside the `3_data_engineering`
+directory.
 
 Then:
 
@@ -176,7 +181,6 @@ which database and table to monitor.
 The documentation of the connector configuration is available [here](kafka-connect/connector-config.json_documented_version.md).
 
 ```bash
-cd 3_data_engineering/
 chmod u+x kafka-connect/register-connector.sh
 sed -i 's/\r$//' register-connector.sh
 ./kafka-connect/register-connector.sh
