@@ -132,7 +132,7 @@ commands below assume that you are inside the `3_data_engineering` directory.
 cd 3_data_engineering
 ```
 
-## Step 1: Run Unit Tests
+### Step 1: Run Unit Tests
 
 Run the unit tests:
 
@@ -151,7 +151,11 @@ cd ../consumer-inventory/
 pytest -v -s test_consumer_order_inventory.py
 ```
 
-### Step 2 — Set Up Directories and Start the Stack
+```bash
+cd ..
+```
+
+### Step 2: Set Up Directories and Start the Stack
 
 ```bash
 # Create the required volume directories
@@ -193,7 +197,7 @@ running.
 
 ---
 
-### Step 2 — Verify the Stack is Healthy
+### Step 3: Verify the Stack is Healthy
 
 **Check that Kafka brokers are up:**
 ```bash
@@ -218,7 +222,7 @@ If you receive a connection error, wait 30 more seconds and try again.
 
 ---
 
-### Step 3 — Register the Debezium Connector
+### Step 4: Register the Debezium Connector
 
 This is the step that **activates CDC**. You are basically telling Debezium 
 which database and table to monitor.
@@ -266,7 +270,7 @@ The `state` field should show `RUNNING`.
 
 ---
 
-### Step 4 — Verify the Debezium Topic Exists
+### Step 5: Verify the Debezium Topic Exists
 
 Once the connector is registered, Debezium creates a new Kafka topic
 named `dbserver1.public.orders` and immediately begins publishing
@@ -297,7 +301,7 @@ that `transformer.py` receives and processes.
 
 ---
 
-### Step 5 — Verify Data is Arriving in ClickHouse
+### Step 6: Verify Data is Arriving in ClickHouse
 
 The transformer service is already running as a Docker container. Check
 its logs to see it consuming CDC events and writing to ClickHouse:
@@ -344,7 +348,7 @@ exit;
 
 ---
 
-### Step 6 — Observe the Live Pipeline
+### Step 6: Observe the Live Pipeline
 
 At this point the full pipeline is running continuously. Open connections
 to PostgreSQL and ClickHouse using DataGrip or any SQL client of your choice to
@@ -399,7 +403,7 @@ will be set automatically based on the quantity.
 
 ---
 
-### Step 7 — Observe CDC Operations (INSERT, UPDATE, DELETE)
+### Step 7: Observe CDC Operations (INSERT, UPDATE, DELETE)
 
 The producer only inserts new orders. To observe UPDATE and DELETE
 events flowing through the pipeline, run these commands manually.
@@ -432,7 +436,7 @@ when the source database removes it.
 
 ---
 
-### Step 8 — Tear Down (Project Cleanup)
+### Step 8: Tear Down (Project Cleanup)
 
 ```bash
 # Stop all services AND delete all stored data
@@ -444,4 +448,5 @@ chmod u+x project_cleanup.sh
 sed -i.bak 's/\r$//' project_cleanup.sh
 ./project_cleanup.sh
 ```
+
 ---

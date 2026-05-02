@@ -3,19 +3,19 @@ title: "Lab 4 — Data Analytics with R and ClickHouse"
 author: "Allan Omondi"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 output:
-  pdf_document:
-    toc: true
-  word_document:
-    toc: true
-  html_document:
-    toc: true
-    df_print: paged
   html_notebook:
     toc: true
     toc_float: true
     theme: flatly
     highlight: tango
     number_sections: true
+  word_document:
+    toc: true
+  pdf_document:
+    toc: true
+  html_document:
+    toc: true
+    df_print: paged
 subtitle: From Data Pipeline to Business Insights
 ---
 
@@ -111,19 +111,51 @@ overview <- dbGetQuery(ch_conn, "
     AVG(order_quantity)                    AS avg_quantity_per_order,
     SUM(is_bulk_order)                     AS bulk_orders,
     ROUND(SUM(is_bulk_order) / COUNT(*) * 100, 1) AS bulk_order_pct,
-    MIN(received_at)                       AS earliest_order,
-    MAX(received_at)                       AS latest_order
+    toTimeZone(MIN(received_at), 'Africa/Nairobi') AS earliest_order,
+    toTimeZone(MAX(received_at), 'Africa/Nairobi') AS latest_order
   FROM orders
   WHERE operation != 'DELETE'
 ")
 
-# Display as a transposed table for readability
+overview$total_orders            <- as.integer(overview$total_orders)
+overview$unique_customers        <- as.integer(overview$unique_customers)
+overview$unique_items            <- as.integer(overview$unique_items)
+overview$total_units             <- as.integer(overview$total_units)
+overview$avg_quantity_per_order  <- as.numeric(overview$avg_quantity_per_order)
+overview$bulk_orders             <- as.integer(overview$bulk_orders)
+overview$bulk_order_pct          <- as.numeric(overview$bulk_order_pct)
+
+overview$earliest_order <- as.POSIXct(overview$earliest_order, tz = "UTC")
+overview$latest_order   <- as.POSIXct(overview$latest_order, tz = "UTC")
+
+overview$earliest_order <- format(
+  overview$earliest_order,
+  "%Y-%m-%d %H:%M:%S",
+  tz = "Africa/Nairobi"
+)
+
+overview$latest_order <- format(
+  overview$latest_order,
+  "%Y-%m-%d %H:%M:%S",
+  tz = "Africa/Nairobi"
+)
+
 overview_t <- data.frame(
   Metric = names(overview),
-  Value  = unlist(overview)
+  Value  = I(as.list(overview[1, ]))
 )
-knitr::kable(overview_t, row.names = FALSE,
-             caption = "Orders Dataset — Summary Statistics")
+
+overview_t$Value <- sapply(overview_t$Value, function(x) {
+  if (inherits(x, "POSIXct")) {
+    format(x, "%Y-%m-%d %H:%M:%S")
+  } else if (is.numeric(x)) {
+    format(x, scientific = FALSE, big.mark = ",")
+  } else {
+    as.character(x)
+  }
+})
+
+print(overview_t)
 ```
 
 **Reading the table:** The `bulk_order_pct` shows what proportion of all orders
@@ -266,10 +298,10 @@ significantly larger orders than customers who place standard orders? Or is the
 
 **Hypotheses:**
 
--   H₀: The mean order quantity for bulk orders equals the mean order quantity
-    for standard orders. (μ_bulk = μ_standard)
--   H₁: The mean order quantity for bulk orders is greater than for standard
-    orders. (μ_bulk \> μ_standard)
+- H₀: The mean order quantity for bulk orders equals the mean order quantity for
+  standard orders. (μ_bulk = μ_standard)
+- H₁: The mean order quantity for bulk orders is greater than for standard
+  orders. (μ_bulk \> μ_standard)
 
 ```{r ttest-bulk}
 # Pull the raw quantities — we need individual records for the t-test
@@ -321,7 +353,8 @@ if (t_result$p.value < 0.05) {
 ```{r ttest-visualise}
 # Visualise the distribution of quantities for both groups
 quantities %>%
-  mutate(order_type = if_else(is_bulk_order == 1, "Bulk", "Standard")) %>%
+  mutate(order_type = if_else(is_bulk_order == 1, "Bulk", "Standard"),
+         order_type = factor(order_type, levels = c("Standard", "Bulk"))) %>%
   ggplot(aes(x = order_quantity, fill = order_type)) +
   geom_histogram(binwidth = 1, position = "identity", alpha = 0.65) +
   geom_vline(
@@ -331,7 +364,7 @@ quantities %>%
   annotate("text", x = 6.2, y = Inf, vjust = 1.5,
            label = "Bulk threshold (>5)", size = 3.5) +
   scale_fill_manual(
-    values = c("Bulk" = "#E84855", "Standard" = "#2E86AB"),
+    values = c("Standard" = "#2E86AB", "Bulk" = "#E84855"),
     name   = "Order Type"
   ) +
   scale_y_continuous(labels = comma) +
@@ -357,8 +390,8 @@ proportions of bulk and standard?
 
 **Hypotheses:**
 
--   H₀: Order type (bulk vs standard) is independent of item type.
--   H₁: There is a significant association between item type and order type.
+- H₀: Order type (bulk vs standard) is independent of item type.
+- H₁: There is a significant association between item type and order type.
 
 ```{r chisq-test}
 # Build a contingency table
@@ -626,7 +659,6 @@ Both queries return the same business answer — only via different paths.
 pg_result <- dbGetQuery(pg_conn, PG_QUERY)
 ch_result <- dbGetQuery(ch_conn, CH_QUERY)
 
-cat("--- PostgreSQL result ---\n")
 knitr::kable(
   pg_result,
   caption   = "Aggregation Result from PostgreSQL",
@@ -637,7 +669,6 @@ knitr::kable(
 ```
 
 ```{r}
-cat("--- ClickHouse result ---\n")
 knitr::kable(
   ch_result,
   caption   = "Aggregation Result from ClickHouse",
