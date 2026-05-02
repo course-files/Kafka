@@ -55,8 +55,6 @@ producer_config = {
     'acks': 'all'
 }
 
-producer = Producer(producer_config)
-
 # This provides sample data to generate realistic-looking orders.
 ITEMS   = ["Managu", "Sukuma Wiki", "Spinach", "Mahindi", "Nyanya", "Matoke",
            'Injera', 'Jollof Rice', 'Ugali', 'Fufu', 'Egusi Soup', 'Nyama Choma',
@@ -92,51 +90,73 @@ def delivery_report(err, msg):
             f"    Offset    : {msg.offset()}\n"
         )
 
-# Give the Kafka cluster a moment to fully stabilize after the initial
-# health checks pass. This is a safety buffer to ensure that the producer
-# does not send messages to a broker that is still booting up.
-
-print("Waiting for the Kafka cluster to stabilize...")
-time.sleep(10)
-
-print("-" * 75)
-print(f"Order Producer is running  [Timezone: {TIMEZONE_NAME}]")
-print("Sending one order every 5 seconds.")
-print(f"Connected to brokers: {BOOTSTRAP_SERVERS}")
-print("-" * 75)
-
-while True:
+def create_order():
+    """
+    Generates a random order dictionary.
+    """
     # Capture the current Lagos time as a timezone-aware timestamp.
     # Including produced_at in the Kafka message gives the Transformer
     # a second reference timestamp to compare against received_at
     # (set by the Inventory Consumer when the record lands in PostgreSQL).
     now_lagos = datetime.now(tz=TZ)
-    order = {
-        'order_id':       str(uuid.uuid4()),
-        'client_fname':   random.choice(CLIENTS),
-        'item':           random.choice(ITEMS),
+    return {
+        'order_id': str(uuid.uuid4()),
+        'client_fname': random.choice(CLIENTS),
+        'item': random.choice(ITEMS),
         'order_quantity': random.randint(1, 8),
         # ISO 8601 format preserves the UTC offset (+01:00) so any
         # downstream service can parse this unambiguously.
         'produced_at': now_lagos.isoformat()
     }
 
-    value = json.dumps(order).encode("utf-8")
+def main():
+    producer = Producer(producer_config)
 
-    # The message key ensures that all messages for the same order_id
-    # always go to the same partition, preserving order per entity.
-    key = order['order_id'].encode("utf-8")
+    # Give the Kafka cluster a moment to fully stabilize after the initial
+    # health checks pass. This is a safety buffer to ensure that the producer
+    # does not send messages to a broker that is still booting up.
 
-    producer.produce(
-        topic="orders",
-        key=key,
-        value=value,
-        callback=delivery_report
-    )
+    print("Waiting for the Kafka cluster to stabilize...")
+    time.sleep(10)
 
-    # flush() blocks until the message is acknowledged by all in-sync
-    # replicas (because acks='all'). This makes the delivery report print
-    # immediately after each message, keeping the output easy to follow.
-    producer.flush()
+    print("-" * 75)
+    print(f"Order Producer is running  [Timezone: {TIMEZONE_NAME}]")
+    print("Sending one order every 5 seconds.")
+    print(f"Connected to brokers: {BOOTSTRAP_SERVERS}")
+    print("-" * 75)
 
-    time.sleep(5)
+    try:
+        while True:
+            order = create_order()
+
+            value = json.dumps(order).encode("utf-8")
+
+            # The message key ensures that all messages for the same order_id
+            # always go to the same partition, preserving order per entity.
+            key = order['order_id'].encode("utf-8")
+
+            producer.produce(
+                topic="orders",
+                key=key,
+                value=value,
+                callback=delivery_report
+            )
+
+            # flush() blocks until the message is acknowledged by all in-sync
+            # replicas (because acks='all'). This makes the delivery report print
+            # immediately after each message, keeping the output easy to follow.
+
+            # In high-throughput production environments, one would call
+            # flush() only before shutting down to allow Kafka to batch messages.
+
+            # Otherwise, calling it as we have done below actually makes the
+            # producer synchronous instead of asynchronous. We call it here for
+            # educational purposes (to make it easier to learn).
+            producer.flush()
+
+            time.sleep(5)
+    except KeyboardInterrupt:
+        print("\nStopping Order Producer Service...")
+
+if __name__ == "__main__":
+    main()
