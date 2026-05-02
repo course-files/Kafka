@@ -15,12 +15,10 @@
 
 from sqlalchemy import Column, String, Integer, DateTime
 from sqlalchemy.orm import DeclarativeBase
-import datetime
-
+from datetime import datetime, timezone
 
 class Base(DeclarativeBase):
     pass
-
 
 class Order(Base):
     """
@@ -41,7 +39,10 @@ class Order(Base):
     # moment the record is inserted. This is the database insertion time —
     # i.e., when the Inventory Service consumed the Kafka message —
     # not the time the order was originally placed.
-    received_at    = Column(DateTime, default=datetime.datetime.utcnow)
+    received_at = Column(
+        DateTime,
+        default=lambda: datetime.now(timezone.utc)
+    )
 
     # This is not part of the database logic. It is a way of telling Python that
     # when we print an Order object, we want to see a nice string representation

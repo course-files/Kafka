@@ -19,8 +19,26 @@ commands below assume that you are inside the `2_containerized_microservices` di
 ```bash
 cd 2_containerized_microservices
 ```
+## Step 1: Run Unit Tests
 
-## Step 1: Execute the Project Setup Script
+Run the unit tests:
+
+```bash
+cd producer/
+pytest -v -s test_producer_order.py
+```
+
+```bash
+cd ../consumer-notification/
+pytest -v -s test_consumer_order_notification.py
+```
+
+```bash
+cd ../consumer-inventory/
+pytest -v -s test_consumer_order_inventory.py
+```
+
+## Step 2: Execute the Project Setup Script
 
 ```bash
 # This is executed to create the required volume directories
@@ -29,7 +47,7 @@ sed -i 's/\r$//' project_setup.sh
 ./project_setup.sh
 ```
 
-## Step 2: Build the images (once only) and start all services
+## Step 3: Build the images (once only) and start all services
 
 ```bash
 docker compose -f docker-compose.yaml up --build \
@@ -43,7 +61,7 @@ Docker Desktop for any container that did not start and start it manually
 by running `docker start <container-name>` or clicking the "Start" button in
 the Docker Desktop UI.
 
-## Step 3: In a separate terminal, verify the `orders` table is being populated
+## Step 4: In a separate terminal, verify the `orders` table is being populated
 
 Execute:
 
@@ -51,7 +69,7 @@ Execute:
 docker exec -it postgres psql -U lab_user -d lab_db -c "SELECT * FROM orders ORDER BY received_at DESC LIMIT 5;"
 ```
 
-## Step 4: Verify the topic exists as well as its replication status
+## Step 5: Verify the topic exists as well as its replication status
 
 ```bash
 docker exec -it kafka1 kafka-topics \
@@ -59,7 +77,7 @@ docker exec -it kafka1 kafka-topics \
   --describe --topic orders
 ```
 
-## Step 5 (IMPORTANT): Demonstrate fault tolerance — stop one broker and watch the system continue
+## Step 6 (IMPORTANT): Demonstrate fault tolerance — stop one broker and watch the system continue
 
 ```bash
 docker stop kafka3
@@ -69,11 +87,11 @@ Observe that the `producer` and `consumers` continue operating without
 interruption.
 The cluster still has **2** in-sync replicas, which satisfies `min.insync.replicas=2`.
 
-## Step 6: Bring the broker back and watch it rejoin the cluster
+## Step 7: Bring the broker back and watch it rejoin the cluster
 
 docker start kafka3
 
-## Step 7: Simulate horizontal scaling for parallel processing
+## Step 8: Simulate horizontal scaling for parallel processing
 
 Both inventory consumer containers join the same consumer group (`order-inventories`).
 Kafka detects the new member, triggers a rebalance, and redistributes the 3
@@ -140,7 +158,7 @@ data:
 docker exec -it postgres psql -U lab_user -d lab_db -c "SELECT * FROM orders ORDER BY received_at DESC LIMIT 5;"
 ```
 
-## Step 8: Tear Down (Clean Up) Part 2 of the Lab
+## Step 9: Tear Down (Clean Up) Part 2 of the Lab
 
 ```bash
 # Stop all services AND delete all stored data

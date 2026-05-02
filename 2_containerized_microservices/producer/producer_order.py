@@ -14,7 +14,7 @@
 #
 # The key changes from Part 1 are (as we move towards a more production
 # ready setup):
-#   1. Bootstrap servers read from an environment variable (not hardcoded)
+#   1. Bootstrap servers read from an environment variable (not hard-coded)
 #   2. 'acks': 'all' ensures full replication acknowledgment per message
 #   3. Orders are generated in a loop to demonstrate live message flow
 # -----------------------------------------------------------------------------
@@ -53,8 +53,6 @@ producer_config = {
     'acks': 'all'
 }
 
-producer = Producer(producer_config)
-
 # This provides sample data to generate realistic-looking orders.
 ITEMS   = ["Managu", "Sukuma Wiki", "Spinach", "Mahindi", "Nyanya", "Matoke"]
 CLIENTS = ["Peter", "Jane", "Koinange", "Wanjiru", "Otieno", "Aisha"]
@@ -81,43 +79,58 @@ def delivery_report(err, msg):
             f"    Offset    : {msg.offset()}\n"
         )
 
-# Give the Kafka cluster a moment to fully stabilize after the initial
-# health checks pass. This is a safety buffer to ensure that the producer
-# does not send messages to a broker that is still booting up.
-
-print("Waiting for the Kafka cluster to stabilize...")
-time.sleep(10)
-
-print("-" * 75)
-print("The 'order producer' is running. Sending one order every 5 seconds.")
-print("Sending one order every 5 seconds for simulation purposes.")
-print(f"Connected to brokers: {BOOTSTRAP_SERVERS}")
-print("-" * 75)
-
-while True:
-    order = {
-        'order_id':       str(uuid.uuid4()),
-        'client_fname':   random.choice(CLIENTS),
-        'item':           random.choice(ITEMS),
+def create_order():
+    """
+    Generates a random order dictionary.
+    """
+    return {
+        'order_id': str(uuid.uuid4()),
+        'client_fname': random.choice(CLIENTS),
+        'item': random.choice(ITEMS),
         'order_quantity': random.randint(1, 8)
     }
 
-    value = json.dumps(order).encode("utf-8")
+def main():
+    producer = Producer(producer_config)
 
-    # The message key ensures that all messages for the same order_id
-    # always go to the same partition, preserving order per entity.
-    key = order['order_id'].encode("utf-8")
+    # Give the Kafka cluster a moment to fully stabilize after the initial
+    # health checks pass. This is a safety buffer to ensure that the producer
+    # does not send messages to a broker that is still booting up.
 
-    producer.produce(
-        topic="orders",
-        key=key,
-        value=value,
-        callback=delivery_report
-    )
+    print("Waiting for the Kafka cluster to stabilize...")
+    time.sleep(10)
 
-    # flush() blocks until the message is acknowledged by all in-sync
-    # replicas (because acks='all'). This makes the delivery report print
-    # immediately after each message, keeping the output easy to follow.
-    producer.flush()
+    print("-" * 75)
+    print("The 'order producer' is running.")
+    print("Sending one order every 5 seconds for simulation purposes.")
+    print(f"Connected to brokers: {BOOTSTRAP_SERVERS}")
+    print("-" * 75)
 
-    time.sleep(5)
+    try:
+        while True:
+            order = create_order()
+
+            value = json.dumps(order).encode("utf-8")
+
+            # The message key ensures that all messages for the same order_id
+            # always go to the same partition, preserving order per entity.
+            key = order['order_id'].encode("utf-8")
+
+            producer.produce(
+                topic="orders",
+                key=key,
+                value=value,
+                callback=delivery_report
+            )
+
+            # flush() blocks until the message is acknowledged by all in-sync
+            # replicas (because acks='all'). This makes the delivery report print
+            # immediately after each message, keeping the output easy to follow.
+            producer.flush()
+
+            time.sleep(5)
+    except KeyboardInterrupt:
+        print("\nStopping Order Producer Service...")
+
+if __name__ == "__main__":
+    main()
