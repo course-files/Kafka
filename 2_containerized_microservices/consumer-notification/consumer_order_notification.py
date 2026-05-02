@@ -49,42 +49,54 @@ consumer_config = {
     "enable.auto.commit": True
 }
 
-consumer = Consumer(consumer_config)
+def process_order(msg):
+    """
+    Logic extracted for unit testing.
+    Accepts a Kafka message object and returns a formatted string.
+    """
+    if msg is None:
+        return None
 
-consumer.subscribe(["orders"])
+    if msg.error():
+        return f"❌ Error: {msg.error()}"
 
-print("Waiting for the Kafka cluster to stabilize...")
-time.sleep(10)
+    # Decoding and parsing logic
+    order = json.loads(msg.value().decode("utf-8"))
 
-print("-" * 75)
-print("Order Notification Service is running. Subscribed to 'orders' topic.")
-print(f"Connected to brokers: {BOOTSTRAP_SERVERS}")
-print("-" * 75)
+    # We return the notification text so the test can verify it
+    return (
+        f"📧 Notification sent\n"
+        f"    To        : {order['client_fname']}\n"
+        f"    Message   : Your order of {order['order_quantity']} x "
+        f"{order['item']} has been received.\n"
+        f"    Order ID  : {order['order_id']}\n"
+        f"    Partition : {msg.partition()}"
+    )
 
-try:
-    while True:
-        msg = consumer.poll(1.0)
+def main():
+    consumer = Consumer(consumer_config)
 
-        if msg is None:
-            continue
-        if msg.error():
-            print(f"❌ Error: {msg.error()}")
-            continue
+    consumer.subscribe(["orders"])
 
-        order = json.loads(msg.value().decode("utf-8"))
+    print("Waiting for the Kafka cluster to stabilize...")
+    time.sleep(10)
 
-        # In a real Notification Service, this is where you would call an
-        # email API (e.g., SendGrid) or an SMS gateway (e.g., Africa's Talking).
-        print(
-            f"📧 Notification sent\n"
-            f"    To        : {order['client_fname']}\n"
-            f"    Message   : Your order of {order['order_quantity']} x "
-            f"{order['item']} has been received.\n"
-            f"    Order ID  : {order['order_id']}\n"
-            f"    Partition : {msg.partition()}\n"
-        )
+    print("-" * 75)
+    print("Order Notification Service is running. Subscribed to 'orders' topic.")
+    print(f"Connected to brokers: {BOOTSTRAP_SERVERS}")
+    print("-" * 75)
 
-except KeyboardInterrupt:
-    print("\nStopping Order Notification Service...")
-finally:
-    consumer.close()
+    try:
+        while True:
+            msg = consumer.poll(1.0)
+
+            output = process_order(msg)
+            if output:
+                print(output)
+    except KeyboardInterrupt:
+        print("\nStopping Order Notification Service...")
+    finally:
+        consumer.close()
+
+if __name__ == "__main__":
+    main()
