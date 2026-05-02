@@ -17,7 +17,7 @@ The architecture is shown below.
 
 ## System Architecture
 
-![System Architecture](../assets/images/SystemArchitecture.png)
+![System Architecture](../assets/images/SystemArchitecture.jpg)
 
 ---
 
@@ -27,7 +27,7 @@ The architecture is shown below.
 
 In Part 2, the Inventory Service wrote orders to PostgreSQL directly.
 But what if you have an existing application that writes to a database
-and you cannot modify its code? CDC solves this.
+and you cannot modify its code? For example, a business that outsourced the development of one of its business applications and the developers did not make the code open-source. However, the business has full access to the database used by the business application. CDC solves such cases.
 
 Instead of changing the application, CDC taps into the database's
 internal change log — the **Write-Ahead Log (WAL)** — and streams
@@ -125,7 +125,6 @@ the concepts in Part 2.
 
 ---
 
-
 Navigate into the Part 3 directory (`3_data_engineering`) first. All the 
 commands below assume that you are inside the `3_data_engineering` directory.
 
@@ -133,7 +132,26 @@ commands below assume that you are inside the `3_data_engineering` directory.
 cd 3_data_engineering
 ```
 
-### Step 1 — Set Up Directories and Start the Stack
+## Step 1: Run Unit Tests
+
+Run the unit tests:
+
+```bash
+cd producer/
+pytest -v -s test_producer_order.py
+```
+
+```bash
+cd ../consumer-notification/
+pytest -v -s test_consumer_order_notification.py
+```
+
+```bash
+cd ../consumer-inventory/
+pytest -v -s test_consumer_order_inventory.py
+```
+
+### Step 2 — Set Up Directories and Start the Stack
 
 ```bash
 # Create the required volume directories
@@ -167,10 +185,11 @@ docker-compose ps
 
 All services should show `healthy` or `running`. The Kafka Connect
 container (`kafka-connect`) takes approximately 60 seconds to fully
-initialize. Wait until it shows `healthy` before moving to Step 2.
+initialize. Wait until it is in a `healthy` status before moving to Step 2.
 
 You can start a container manually by running `docker start <container-name>`
-or clicking the "Start" button in the Docker Desktop UI.
+or clicking the "Start" button in the Docker Desktop UI in case it is not
+running.
 
 ---
 

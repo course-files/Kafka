@@ -49,42 +49,54 @@ consumer_config = {
     "enable.auto.commit": True
 }
 
-consumer = Consumer(consumer_config)
+def process_order(msg):
+    """
+    Logic extracted for unit testing.
+    Accepts a Kafka message object and returns a formatted string.
+    """
+    order = json.loads(msg.value().decode("utf-8"))
 
-consumer.subscribe(["orders"])
+    # In a real Notification Service, this is where you would call an
+    # email API (e.g., SendGrid) or an SMS gateway (e.g., Africa's Talking).
+    return (
+        f"📧 Notification sent\n"
+        f"    To        : {order['client_fname']}\n"
+        f"    Message   : Your order of {order['order_quantity']} x "
+        f"{order['item']} has been received.\n"
+        f"    Order ID  : {order['order_id']}\n"
+        f"    Partition : {msg.partition()}\n"
+    )
 
-print("Waiting for the Kafka cluster to stabilize...")
-time.sleep(10)
+def main():
+    consumer = Consumer(consumer_config)
 
-print("-" * 75)
-print("Order Notification Service is running. Subscribed to 'orders' topic.")
-print(f"Connected to brokers: {BOOTSTRAP_SERVERS}")
-print("-" * 75)
+    consumer.subscribe(["orders"])
 
-try:
-    while True:
-        msg = consumer.poll(1.0)
+    print("Waiting for the Kafka cluster to stabilize...")
+    time.sleep(10)
 
-        if msg is None:
-            continue
-        if msg.error():
-            print(f"❌ Error: {msg.error()}")
-            continue
+    print("-" * 75)
+    print("Order Notification Service is running. Subscribed to 'orders' topic.")
+    print(f"Connected to brokers: {BOOTSTRAP_SERVERS}")
+    print("-" * 75)
 
-        order = json.loads(msg.value().decode("utf-8"))
+    try:
+        while True:
+            msg = consumer.poll(1.0)
 
-        # In a real Notification Service, this is where you would call an
-        # email API (e.g., SendGrid) or an SMS gateway (e.g., Africa's Talking).
-        print(
-            f"📧 Notification sent\n"
-            f"    To        : {order['client_fname']}\n"
-            f"    Message   : Your order of {order['order_quantity']} x "
-            f"{order['item']} has been received.\n"
-            f"    Order ID  : {order['order_id']}\n"
-            f"    Partition : {msg.partition()}\n"
-        )
+            if msg is None:
+                continue
+            if msg.error():
+                print(f"❌ Error: {msg.error()}")
+                continue
 
-except KeyboardInterrupt:
-    print("\nStopping Order Notification Service...")
-finally:
-    consumer.close()
+            output = process_order(msg)
+            if output:
+                print(output)
+    except KeyboardInterrupt:
+        print("\nStopping Order Notification Service...")
+    finally:
+        consumer.close()
+
+if __name__ == "__main__":
+    main()
