@@ -1,20 +1,23 @@
 # Kafka
 
-| Key             | Value                                                                                                                                                                                                                                                                                     |
-|:----------------|:------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Course Code** | BBT 4106                                                                                                                                                                                                                                                                                  |
-| **Course Name** | BBT 4106: Business Intelligence I (Week 4-6)                                                                                                                                                                                                                                              |
-| **Semester**    | April to July 2026                                                                                                                                                                                                                                                                        |
-| **Lecturer**    | Allan Omondi                                                                                                                                                                                                                                                                              |
-| **Contact**     | aomondi@strathmore.edu                                                                                                                                                                                                                                                                    |
-| **Note**        | The lecture contains both theory and practice.<br/>This notebook forms part of the practice.<br/>It is intended for educational purposes only.<br/>Recommended citation: [BibTex](https://raw.githubusercontent.com/course-files/ServingMLModels/refs/heads/main/RecommendedCitation.bib) |
+| Key             | Value                                                                                                                                                                                                                                                                           |
+|:----------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Course Code** | BBT 4106                                                                                                                                                                                                                                                                        |
+| **Course Name** | BBT 4106: Business Intelligence I (Week 4-6)                                                                                                                                                                                                                                    |
+| **Semester**    | April to July 2026                                                                                                                                                                                                                                                              |
+| **Lecturer**    | Allan Omondi                                                                                                                                                                                                                                                                    |
+| **Contact**     | aomondi@strathmore.edu                                                                                                                                                                                                                                                          |
+| **Note**        | The lecture contains both theory and practice.<br/>This notebook forms part of the practice.<br/>It is intended for educational purposes only.<br/>Recommended citation: [BibTex](https://raw.githubusercontent.com/course-files/Kafka/refs/heads/main/RecommendedCitation.bib) |
 
 ## Technology Stack
 
 <p align="left">
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/apachekafka/apachekafka-original-wordmark.svg" width="40" />
-<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" width="40"/>
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/docker/docker-original-wordmark.svg" width="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/python/python-original.svg" width="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/r/r-original.svg" width="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/sqlalchemy/sqlalchemy-original-wordmark.svg" width="40"/>
+<img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/postgresql/postgresql-original-wordmark.svg" width="40"/> 
 </p>
 
 
@@ -36,6 +39,7 @@
 │   ├── consumer_order_notification.py
 │   ├── docker-compose.yaml
 │   ├── instructions_for_project_setup.md
+│   ├── instructions_for_running_unit_tests.md
 │   ├── producer_order.py
 │   ├── project_cleanup.sh
 │   ├── project_setup.sh
@@ -48,11 +52,13 @@
 │   │   ├── Dockerfile.consumer-inventory
 │   │   ├── consumer_order_inventory.py
 │   │   ├── models.py
-│   │   └── requirements.txt
+│   │   ├── requirements.txt
+│   │   └── test_consumer_order_inventory.py
 │   ├── consumer-notification
 │   │   ├── Dockerfile.consumer-notification
 │   │   ├── consumer_order_notification.py
-│   │   └── requirements.txt
+│   │   ├── requirements.txt
+│   │   └── test_consumer_order_notification.py
 │   ├── database
 │   │   └── init.sql
 │   ├── docker-compose.yaml
@@ -60,7 +66,8 @@
 │   ├── producer
 │   │   ├── Dockerfile.producer
 │   │   ├── producer_order.py
-│   │   └── requirements.txt
+│   │   ├── requirements.txt
+│   │   └── test_producer_order.py
 │   ├── project_cleanup.sh
 │   └── project_setup.sh
 ├── 3_data_engineering
@@ -72,11 +79,13 @@
 │   │   ├── Dockerfile.consumer-inventory
 │   │   ├── consumer_order_inventory.py
 │   │   ├── models.py
-│   │   └── requirements.txt
+│   │   ├── requirements.txt
+│   │   └── test_consumer_order_inventory.py
 │   ├── consumer-notification
 │   │   ├── Dockerfile.consumer-notification
 │   │   ├── consumer_order_notification.py
-│   │   └── requirements.txt
+│   │   ├── requirements.txt
+│   │   └── test_consumer_order_notification.py
 │   ├── database
 │   │   └── init.sql
 │   ├── docker-compose.yaml
@@ -88,7 +97,8 @@
 │   ├── producer
 │   │   ├── Dockerfile.producer
 │   │   ├── producer_order.py
-│   │   └── requirements.txt
+│   │   ├── requirements.txt
+│   │   └── test_producer_order.py
 │   ├── project_cleanup.sh
 │   ├── project_setup.sh
 │   └── transformer
@@ -120,7 +130,7 @@
     ├── dev.txt
     └── prod.txt
 
-21 directories, 72 files
+21 directories, 79 files
 ```
 
 ## Setup Instructions
@@ -142,4 +152,4 @@ Refer to the files below, in the order specified, for more details:
 
 ## Cleanup Instructions (to be done after submitting the lab)
 
-- [Cleanup Instructions](/0_admin_instructions/2_instructions_for_project_cleanup.md)
+- [Cleanup Instructions](0_admin_instructions/2_instructions_for_project_cleanup.md)
