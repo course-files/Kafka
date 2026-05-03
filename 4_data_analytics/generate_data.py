@@ -55,17 +55,21 @@ TOTAL_ROWS = 500_000
 # Batch size for inserts. Larger batches are faster but use more memory.
 BATCH_SIZE = 5_000
 
-# Sample data — reflects the items and customers from the original lab
-ITEMS = [
-    "Managu", "Sukuma Wiki", "Ngwaci", "Mahindi",
-    "Nyanya", "Viazi", "Kunde", "Mchicha", "Terere", "Nduma"
-]
+# Sample data — reflects the items and customers from the lab
+ITEMS   = [
+    'Managu', 'Sukuma Wiki', 'Spinach', 'Mahindi', 'Nyanya', 'Matoke',
+    'Injera', 'Jollof Rice', 'Ugali', 'Fufu', 'Egusi Soup', 'Nyama Choma',
+    'Kaimati', 'Mahamri', 'Omena', 'Mutura', 'Matumbo']
 
 CUSTOMERS = [
-    "Peter",   "Jane",    "Amani",   "Wanjiru",
-    "Otieno",  "Aisha",   "Kamau",   "Njeri",
-    "Odhiambo","Fatuma",  "Mwangi",  "Adhiambo"
-]
+    'Omondi', 'Kiplagat', 'Mutua', 'Wanyama', 'Odhiambo', 'Kariuki',
+    'Njoroge', 'Ochieng', 'Muthoni', 'Mwangi','Mugisha', 'Ndayishimiye',
+    'Nkurunziza', 'Kagame', 'Bizimana', 'Mukasa', 'Kabongo', 'Mutombo',
+    'Kabila', 'Lumumba', 'Mugabe', 'Mandela', 'Zuma', 'Malema', 'Mbeki',
+    'Koinange', 'Mandela', 'Zuma', 'Malema', 'Munee', 'Munyao', 'Munyoki',
+    'Munyua', 'Munyui', 'Munyuli', 'Munywe', 'Munzala', 'Munzala',
+    'Hassan', 'Mohammed', 'Ali', 'Abdi', 'Omar', 'Osman', 'Hussein',
+    'Ahmed', 'Ibrahim', 'Adan', 'Yusuf', 'Abdullahi']
 
 # Africa/Nairobi for ClickHouse, Africa/Lagos for PostgreSQL
 # (matching the lab configuration)

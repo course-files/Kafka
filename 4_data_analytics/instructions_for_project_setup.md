@@ -312,6 +312,73 @@ Pay close attention to the benchmark section. Record:
 * The speedup ratio
 
 These numbers will vary depending on your machine, but ClickHouse should be 
-substantially faster — typically 10× to 50× on a 500,000-row table. On a
+substantially faster — typically 10× to 50× on a 500,000-row table. In a
 production warehouse with billions of rows, this gap widens to several orders
 of magnitude.
+
+## Step 10: Connect to ClickHouse via Power BI (Requires Windows OS)
+
+Open "ODBC Data Sources (64-bit)"
+
+![PBI_to_CH_1.png](../assets/images/PBI_to_CH_1.png)
+
+Go to "User DSN" and click "Add". Then select "ClickHouse ODBC Driver
+(Unicode)".
+
+* Specify the Name as 'PBI to ClickHouse via ODBC' 
+* Specify the Host as '127.0.0.1'
+* Specify the Port as '8123'
+
+Leave the other fields blank and click "Ok".
+
+![PBI_to_CH_2.png](../assets/images/PBI_to_CH_2.png)
+
+Open the Power BI Desktop application and click "Get Data" > "More...".
+
+![PBI_to_CH_3.png](../assets/images/PBI_to_CH_3.png)
+
+Select "ODBC" and click "Connect".
+
+![PBI_to_CH_4.png](../assets/images/PBI_to_CH_4.png)
+
+Select the "PBI to ClickHouse via ODBC" data source and click "OK".
+
+![PBI_to_CH_5.png](../assets/images/PBI_to_CH_5.png)
+
+Provide the same credentials (username and password only) used in the R
+script in Part 4 of the lab.
+
+![PBI_to_CH_6.png](../assets/images/PBI_to_CH_6.png)
+
+Once connected, the data should appear in the Power BI Desktop workspace as shown below. Select the "orders" table and click "Load".
+
+![PBI_to_CH_7.png](../assets/images/PBI_to_CH_7.png)
+
+Wait for the data to load.
+
+![PBI_to_CH_8.png](../assets/images/PBI_to_CH_8.png)
+
+Once it loads, select "line chart" to create a line chart.
+
+![PBI_to_CH_9.png](../assets/images/PBI_to_CH_9.png)
+
+Add the year and the month from the received_at column to the X-axis.
+
+![PBI_to_CH_10.png](../assets/images/PBI_to_CH_10.png)
+
+Add the sum of the order_quantity column to the Y-axis.
+
+![PBI_to_CH_11.png](../assets/images/PBI_to_CH_11.png)
+
+This creates a simple visualization showing the number of orders placed each
+month. The data in this case is loaded from the ClickHouse data warehouse in
+real-time (mean latency of less than 5 seconds from order insertion to
+availability in ClickHouse) via the ODBC connection. It is not loaded from
+the PostgreSQL database.
+
+This demonstrates how business intelligence tools can connect directly to an
+analytical data warehouse to provide up-to-date insights without impacting
+the performance of the operational database.
+
+We will learn more about dashboarding using Microsoft Power BI in Module 5
+of the BI Option.
