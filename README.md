@@ -25,6 +25,17 @@
 
 ![System Architecture](assets/images/SystemArchitecture.jpg)
 
+## Expected Results
+
+A data warehouse designed using a non-relational data model (ClickHouse)
+enables analytical queries that a database designed using a relational
+(object relational) data model (PostgreSQL) cannot serve at scale.
+
+This justifies the need to create a data pipeline that separates the
+ACID-compliant processing of database transactions from the processing of
+analytical queries.
+
+![ExpectedResults.png](assets/images/ExpectedResults.png)
 
 ## Repository Structure
 
@@ -34,7 +45,7 @@
 │   ├── 0_instructions_for_project_setup.md
 │   ├── 1_instructions_for_python_installation.md
 │   └── 2_instructions_for_project_cleanup.md
-├── 1_kafka_fundamentals
+├── 1_kafka_fundamentals                    ← This is Part 1 of the lab.
 │   ├── consumer_order_inventory.py
 │   ├── consumer_order_notification.py
 │   ├── docker-compose.yaml
@@ -47,7 +58,7 @@
 │   ├── test_consumer_order_inventory.py
 │   ├── test_consumer_order_notification.py
 │   └── test_producer_order.py
-├── 2_containerized_microservices
+├── 2_containerized_microservices           ← This is Part 2 of the lab.
 │   ├── consumer-inventory
 │   │   ├── Dockerfile.consumer-inventory
 │   │   ├── consumer_order_inventory.py
@@ -70,7 +81,7 @@
 │   │   └── test_producer_order.py
 │   ├── project_cleanup.sh
 │   └── project_setup.sh
-├── 3_data_engineering
+├── 3_data_engineering                      ← This is Part 3 of the lab.
 │   ├── clickhouse
 │   │   ├── config.d
 │   │   │   └── timezone.xml
@@ -105,20 +116,28 @@
 │       ├── Dockerfile.transformer
 │       ├── requirements.txt
 │       └── transformer.py
-├── 4_data_analytics
+├── 4_data_analytics                        ← This is Part 4 of the lab.
 │   ├── connect_clickhouse_with_ODBC.R
 │   ├── generate_data.py
-│   ├── instructions_for_project_setup.md
-│   ├── lab4_analytics_with_odbc.Rmd
-│   └── lab4_analytics_with_odbc.nb.html
+│   ├── lab4_analytics_with_odbc_quarto.html
+│   ├── lab4_analytics_with_odbc_quarto.qmd
+│   └── lab4_analytics_with_odbc_quarto_files
+│       └── figure-html
+│           ├── bulk-vs-standard-1.png
+│           ├── orders-by-item-1.png
+│           ├── orders-over-time-1.png
+│           └── ttest-visualise-1.png
 ├── Kafka.Rproj
 ├── LICENSE
-├── README.md
+├── README.md                               ← This is the file you are reading right now.
+├── RecommendedCitation.bib
 ├── assets
 │   └── images
 │       ├── DataGrip_Output.png
+│       ├── ExpectedResults.png
 │       ├── SystemArchitecture.jpg
-│       └── SystemArchitecture.png
+│       ├── SystemArchitecture.png
+│       └── TheUntoldStoryofR.png
 ├── lab_submission_instructions.md
 ├── project_cleanup.sh
 └── requirements
@@ -130,7 +149,7 @@
     ├── dev.txt
     └── prod.txt
 
-21 directories, 79 files
+23 directories, 85 files
 ```
 
 ## Setup Instructions

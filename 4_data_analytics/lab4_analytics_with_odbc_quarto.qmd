@@ -593,6 +593,65 @@ This is the central justification for the data pipeline you built. You will now
 run the **same aggregation query** on PostgreSQL and on ClickHouse and measure
 the execution time of each.
 
+## The "Cold Start" Problem 
+
+The "Cold Start" problem in this context of database benchmarking describes
+**the performance lag that occurs when a system is first initialized or
+restarted, forcing it to fetch data from the physical disk storage rather than
+from high-speed memory (RAM)**.
+
+### The Concept: Cold versus Warm
+
+- **Cold Start:** The database has just started. Its memory (cache) is empty.
+  Every request for data requires a "trip" to the hard drive or SSD, which is
+  significantly slower than RAM.
+
+- **Warm Start:** After the first query, the database stores the results and
+  frequently accessed data in its RAM. Subsequent queries are "warm" because the
+  system can skip the disk trip and serve data instantly from memory.
+
+### Library Analogy
+
+Imagine you are a researcher working on your final year research and you need
+literature from a book available in the library:
+
+- **Cold Start:** You enter the library for the first time today. To find
+  information on "Test Driven Development (TDD)", you must walk deep into the
+  aisles on a specific floor, find the specific shelf, and pull out the book.
+  This takes ≈10 minutes.
+
+- **Warm Start:** You already found the book on TDD. You leave the book open on
+  your desk as you continue to research on a similar topic about Requirements
+  Driven Development (RDD). The next time you need to check a detail on TDD
+  again, you simply look down at the table where you left the book. This takes
+  ≈2 seconds.
+
+### Why it Matters for Benchmarking
+
+If you do not restart ("Cold Start") the server (the Docker containers),
+PostgreSQL might appear as fast as ClickHouse simply because it is reading from
+the "desk" (RAM). By forcing a Cold Start, we are testing the **architectural
+efficiency** of the database engines—specifically how ClickHouse’s columnar
+storage allows it to scan only the necessary data from the disk, whereas
+PostgreSQL’s row-based structure forces it to read much more than is actually
+required.
+
+### Strategic Counter-Position
+
+While Cold Start benchmarks reveal raw architectural power, **Warm Start**
+benchmarks are arguably more representative of a healthy production environment.
+An optimized PostgreSQL instance should ideally be "warm" 99% of the time. The
+real "victory" for ClickHouse is not just that it is faster on a cold start, but
+that its columnar compression allows it to keep **much more data** in a "warm"
+state using the same amount of RAM compared to PostgreSQL.
+
+Run this in your terminal:
+
+`cd 3_data_engineering/docker restart postgres clickhouse && docker ps`
+
+Wait until both PostgreSQL and ClickHouse are ready to receive connections. You
+can confirm that they are ready by connecting via DataGrip.
+
 ## The Query
 
 The benchmark query computes, for each item, the total number of orders, the
@@ -610,30 +669,28 @@ PG_QUERY <- "
     item,
     COUNT(*)                              AS order_count,
     SUM(order_quantity)                   AS total_units,
-    ROUND(AVG(order_quantity)::numeric, 2) AS avg_quantity,
-    SUM(CASE WHEN order_quantity > 5
+    ROUND(AVG(order_quantity), 2)         AS avg_quantity,
+    SUM(CASE WHEN order_quantity > 5 
              THEN 1 ELSE 0 END)           AS bulk_orders,
-    ROUND(
-      SUM(CASE WHEN order_quantity > 5 THEN 1 ELSE 0 END)::numeric /
-      COUNT(*) * 100, 1
-    )                                     AS bulk_pct
+    ROUND(((SUM(CASE WHEN order_quantity > 5 THEN 1 ELSE 0 END))::numeric / COUNT(*)) * 100, 2) AS bulk_pct
   FROM orders
-  GROUP BY item
+  GROUP BY orders.item
   ORDER BY total_units DESC
 "
 
 CH_QUERY <- "
   SELECT
-    item,
-    COUNT(*)                         AS order_count,
-    SUM(order_quantity)              AS total_units,
-    ROUND(AVG(order_quantity), 2)    AS avg_quantity,
-    SUM(is_bulk_order)               AS bulk_orders,
-    ROUND(SUM(is_bulk_order) / COUNT(*) * 100, 1) AS bulk_pct
-  FROM orders
-  WHERE operation != 'DELETE'
-  GROUP BY item
-  ORDER BY total_units DESC
+      item,
+      COUNT(*)                              AS order_count,
+      SUM(order_quantity)                   AS total_units,
+      ROUND(AVG(order_quantity), 2)         AS avg_quantity,
+      SUM(CASE WHEN order_quantity > 5 
+               THEN 1 ELSE 0 END)           AS bulk_orders,
+      ROUND(CAST((SUM(CASE WHEN order_quantity > 5 THEN 1 ELSE 0 END)) AS Float64) / COUNT(*) * 100, 2) AS bulk_pct
+    FROM orders
+    WHERE orders.operation != 'DELETE'
+    GROUP BY orders.item
+    ORDER BY total_units DESC
 "
 
 cat("Both queries are defined and ready.\n")
@@ -646,7 +703,13 @@ cat("ClickHouse query will scan:  ", format(ch_count, big.mark=","), " rows\n")
 The `bench::mark()` function runs each query multiple times and reports the
 median, mean, and standard deviation of execution times. Using `bench` rather
 than `system.time()` produces more reliable results because it controls for CPU
-caching and JIT effects.
+caching and Just-In-Time (JIT) effects.
+
+Normally, code is either **interpreted** (read line-by-line, which is slow) or
+**compiled** (translated into machine code all at once, which is fast). JIT is a
+hybrid. The system starts by interpreting the code, but as it notices certain
+parts are being run frequently, it compiles those specific parts into optimized
+machine code "on the fly" (Just-In-Time).
 
 ```{r benchmark-run}
 # Warm up both connections with a trivial query before benchmarking.
@@ -655,13 +718,13 @@ invisible(dbGetQuery(pg_conn, "SELECT 1"))
 invisible(dbGetQuery(ch_conn, "SELECT 1"))
 
 cat("Running benchmark — this may take 1 to 2 minutes...\n")
-cat("Each query runs", 5, "times. Median time is reported.\n\n")
+cat("Each query runs", 10, "times. Median time is reported.\n\n")
 
 benchmark_results <- bench::mark(
   PostgreSQL  = dbGetQuery(pg_conn, PG_QUERY),
   ClickHouse  = dbGetQuery(ch_conn, CH_QUERY),
-  iterations  = 5,
-  check       = FALSE   # Results differ (different column names) so skip check
+  iterations  = 10,
+  check       = FALSE
 )
 
 # Extract median times for comparison
@@ -709,8 +772,8 @@ ggplot(bench_df,
     vjust = 1.8, size = 3.5, colour = "white", fontface = "italic"
   ) +
   scale_fill_manual(values = c(
-    "PostgreSQL"  = "#E84855",
-    "ClickHouse"  = "#2E86AB"
+    "PostgreSQL"  = "#E03C31",
+    "ClickHouse"  = "#4F6EA4"
   )) +
   scale_y_continuous(
     labels   = label_number(suffix = " s"),
@@ -719,28 +782,29 @@ ggplot(bench_df,
   labs(
     title    = "Aggregation Query: PostgreSQL vs ClickHouse",
     subtitle = sprintf(
-      "Same GROUP BY query on %s rows — ClickHouse is %.1f× faster",
-      format(max(pg_count, ch_count), big.mark = ","),
+      "Similar GROUP BY query run on %s rows. ClickHouse is ≈%.1f× faster",
+      format(as.numeric(max(pg_count, ch_count)), big.mark = ","),
       speedup
     ),
     x        = NULL,
     y        = "Median Execution Time (seconds)",
     caption  = paste(
-      "Benchmark: 5 iterations, bench::mark()",
-      sprintf("| %s rows", format(max(pg_count, ch_count), big.mark = ","))
+      "Benchmark: 10 iterations, using `bench::mark()`",
+      sprintf("| %s rows",
+              format(as.numeric(max(pg_count, ch_count)), big.mark = ","))
     )
   ) +
   theme_minimal(base_size = 13) +
   theme(
     plot.title    = element_text(face = "bold"),
-    plot.subtitle = element_text(colour = "grey40"),
+    plot.subtitle = element_text(colour = "#1D1D1D"),
     axis.text.x   = element_text(size = 12, face = "bold")
   )
 ```
 
 ## Examine the Query Results
 
-Both queries return the same business answer — only via different paths.
+Both queries return a similar business answer — only via different paths.
 
 ```{r benchmark-results-table}
 pg_result <- dbGetQuery(pg_conn, PG_QUERY)
@@ -796,12 +860,12 @@ sep = ""
 
 --------------------------------------------------------------------------------
 
-# Part 4: Pipeline Latency Analysis
+# Data Pipeline Latency Analysis
 
-One of the audit fields the transformer added is `processed_at` — the Nairobi
-time at which the transformer consumed the Kafka message and wrote the record to
-ClickHouse. The gap between `received_at` and `processed_at` is the end-to-end
-pipeline latency.
+One of the audit fields the transformer added (feature engineering) is
+`processed_at` — the Nairobi time at which the transformer consumed the Kafka
+message and wrote the record to ClickHouse. The gap between `received_at` and
+`processed_at` is the end-to-end pipeline latency.
 
 ```{r latency}
 latency_data <- dbGetQuery(ch_conn, "
@@ -841,12 +905,12 @@ latency_data %>%
   geom_col(position = "dodge", width = 0.7) +
   coord_flip() +
   scale_fill_manual(
-    values = c("INSERT" = "#2E86AB", "SNAPSHOT" = "#F4A261"),
+    values = c("INSERT" = "#4F6EA4", "SNAPSHOT" = "#CEA152"),
     name   = "Operation"
   ) +
   labs(
     title    = "Average End-to-End Pipeline Latency",
-    subtitle = "Time between PostgreSQL write (received_at) and ClickHouse write (processed_at)",
+    subtitle = "Time between PostgreSQL write (received_at) and\nClickHouse write (processed_at)",
     x        = NULL,
     y        = "Average Latency (seconds)",
     caption  = "Source: ClickHouse — orders table | Only items with >100 records shown"
@@ -860,7 +924,7 @@ latency_data %>%
 ```
 
 **Interpretation:** Snapshot records (op = 'r') typically show higher latency
-than live inserts because the snapshot runs once at connector startup and
+than live inserts because the snapshot runs once at connector stars and
 processes a large batch of existing records. Live inserts flow through the
 pipeline in near real-time. A latency of under 5 seconds from PostgreSQL write
 to ClickHouse availability is consistent with a well-functioning CDC pipeline.
@@ -869,11 +933,13 @@ to ClickHouse availability is consistent with a well-functioning CDC pipeline.
 
 # Conclusion
 
-This notebook has demonstrated three things:
+This notebook was used to demonstrated three things:
 
-**1. ClickHouse enables analytical queries that PostgreSQL cannot serve at
-scale.** The benchmark showed a clear performance difference on the same query
-against the same data volume. This difference grows with scale.
+**1. A data warehouse designed using a non-relational data model (ClickHouse)
+enables analytical queries that a database designed using a relational (object
+relational) data model (PostgreSQL) cannot serve at scale.** The benchmark
+showed a clear performance difference on the same query against the same data
+volume. This difference grows with scale.
 
 **2. Statistical analysis answers real business questions.** The t-test
 confirmed that bulk orders genuinely differ in quantity from standard orders.
