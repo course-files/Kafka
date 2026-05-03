@@ -593,7 +593,7 @@ This is the central justification for the data pipeline you built. You will now
 run the **same aggregation query** on PostgreSQL and on ClickHouse and measure
 the execution time of each.
 
-## The "Cold Start" Problem 
+## The "Cold Start" Problem
 
 The "Cold Start" problem in this context of database benchmarking describes
 **the performance lag that occurs when a system is first initialized or
