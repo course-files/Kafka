@@ -38,7 +38,125 @@ analytical queries.
 ![ExpectedResults.png](assets/images/ExpectedResults.png)
 
 ## Repository Structure
+```text
+.
+├── 0_admin_instructions
+│   ├── 0_instructions_for_project_setup.md
+│   ├── 1_instructions_for_python_installation.md
+│   └── 2_instructions_for_project_cleanup.md
+├── 1_kafka_fundamentals                    ← This is Part 1 of the lab.
+│   ├── consumer_order_inventory.py
+│   ├── consumer_order_notification.py
+│   ├── docker-compose.yaml
+│   ├── instructions_for_project_setup.md
+│   ├── instructions_for_running_unit_tests.md
+│   ├── producer_order.py
+│   ├── project_cleanup.sh
+│   ├── project_setup.sh
+│   ├── requirements.txt
+│   ├── test_consumer_order_inventory.py
+│   ├── test_consumer_order_notification.py
+│   └── test_producer_order.py
+├── 2_containerized_microservices           ← This is Part 2 of the lab.
+│   ├── consumer-inventory
+│   │   ├── Dockerfile.consumer-inventory
+│   │   ├── consumer_order_inventory.py
+│   │   ├── models.py
+│   │   ├── requirements.txt
+│   │   └── test_consumer_order_inventory.py
+│   ├── consumer-notification
+│   │   ├── Dockerfile.consumer-notification
+│   │   ├── consumer_order_notification.py
+│   │   ├── requirements.txt
+│   │   └── test_consumer_order_notification.py
+│   ├── database
+│   │   └── init.sql
+│   ├── docker-compose.yaml
+│   ├── instructions_for_project_setup.md
+│   ├── producer
+│   │   ├── Dockerfile.producer
+│   │   ├── producer_order.py
+│   │   ├── requirements.txt
+│   │   └── test_producer_order.py
+│   ├── project_cleanup.sh
+│   └── project_setup.sh
+├── 3_data_engineering                      ← This is Part 3 of the lab.
+│   ├── clickhouse
+│   │   ├── config.d
+│   │   │   └── timezone.xml
+│   │   └── init.sql
+│   ├── consumer-inventory
+│   │   ├── Dockerfile.consumer-inventory
+│   │   ├── consumer_order_inventory.py
+│   │   ├── models.py
+│   │   ├── requirements.txt
+│   │   └── test_consumer_order_inventory.py
+│   ├── consumer-notification
+│   │   ├── Dockerfile.consumer-notification
+│   │   ├── consumer_order_notification.py
+│   │   ├── requirements.txt
+│   │   └── test_consumer_order_notification.py
+│   ├── database
+│   │   └── init.sql
+│   ├── docker-compose.yaml
+│   ├── instructions_for_project_setup.md
+│   ├── kafka-connect
+│   │   ├── connector-config.json
+│   │   ├── connector-config.json_documented_version.md
+│   │   └── register-connector.sh
+│   ├── producer
+│   │   ├── Dockerfile.producer
+│   │   ├── producer_order.py
+│   │   ├── requirements.txt
+│   │   └── test_producer_order.py
+│   ├── project_cleanup.sh
+│   ├── project_setup.sh
+│   └── transformer
+│       ├── Dockerfile.transformer
+│       ├── requirements.txt
+│       └── transformer.py
+├── 4_data_analytics                        ← This is Part 4 of the lab.
+│   ├── connect_clickhouse_with_ODBC.R
+│   ├── generate_data.py
+│   ├── instructions_for_project_setup.md
+│   ├── lab4_analytics_with_odbc_quarto.docx
+│   ├── lab4_analytics_with_odbc_quarto.html
+│   └── lab4_analytics_with_odbc_quarto.qmd
+├── Kafka.Rproj
+├── LICENSE
+├── README.md                               ← This is the file you are reading.
+├── RecommendedCitation.bib
+├── assets
+│   └── images
+│       ├── DataGrip_Output.png
+│       ├── ExpectedResults.png
+│       ├── PBI_to_CH_1.png
+│       ├── PBI_to_CH_10.png
+│       ├── PBI_to_CH_11.png
+│       ├── PBI_to_CH_2.png
+│       ├── PBI_to_CH_3.png
+│       ├── PBI_to_CH_4.png
+│       ├── PBI_to_CH_5.png
+│       ├── PBI_to_CH_6.png
+│       ├── PBI_to_CH_7.png
+│       ├── PBI_to_CH_8.png
+│       ├── PBI_to_CH_9.png
+│       ├── SystemArchitecture.jpg
+│       ├── SystemArchitecture.png
+│       └── TheUntoldStoryofR.png
+├── lab_submission_instructions.md
+├── project_cleanup.sh
+└── requirements
+    ├── base.txt
+    ├── colab.txt
+    ├── constraints.txt
+    ├── dev.inferred.txt
+    ├── dev.lock.txt
+    ├── dev.txt
+    └── prod.txt
 
+21 directories, 94 files
+```
 ```text
 .
 ├── 0_admin_instructions

@@ -104,7 +104,7 @@ all Operating Systems.
 
 ## Step 3: Install ClickHouse ODBC Driver
 
-Download from official source:
+Download from the official source:
 
 <https://clickhouse.com/docs/en/interfaces/odbc>
 
