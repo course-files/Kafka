@@ -19,11 +19,11 @@ JSON does not support comments. The following is a commented version of the conn
 
     // Credentials used by Debezium to connect to PostgreSQL.
     // Must have replication privileges.
-    "database.user": "lab_user",
-    "database.password": "lab_password",
+    "database.user": "${POSTGRES_USER}",
+    "database.password": "${POSTGRES_PASSWORD}",
 
     // The database that Debezium will monitor for changes.
-    "database.dbname": "lab_db",
+    "database.dbname": "${POSTGRES_DB}",
 
     // Prefix for all Kafka topics created by this connector.
     // Final topic name becomes: dbserver1.public.orders

@@ -147,13 +147,17 @@ services:
   postgres:
     image: postgres:16
     container_name: postgres
-    command: postgres -c wal_level=logical
+    # We change from the default 'wal_level=replica' to 'wal_level=logical' to
+    # enable logical decoding, which is necessary for Debezium CDC to capture
+    # row-level changes. This allows us to stream changes from PostgreSQL to
+    # Kafka "in real time".
+    command: postgres -c wal_level=logical -c max_slot_wal_keep_size=6GB
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: lab_user
-      POSTGRES_PASSWORD: lab_password
-      POSTGRES_DB: lab_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
       # Set the timezone to UTC to ensure consistent timestamp handling across services.
       TZ: ${TZ_LAGOS}
       PGTZ: ${TZ_LAGOS}
@@ -161,11 +165,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U lab_user -d lab_db"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB && psql -U $$POSTGRES_USER -d $$POSTGRES_DB -c 'SELECT 1 FROM orders LIMIT 1'"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+      start_period: 120s
 
   # ---------------------------------------------------------------------------
   # KAFKA CONNECT WITH DEBEZIUM — THE CDC ENGINE
@@ -268,7 +272,7 @@ services:
       # Sets the password for the default user.
       # Required from ClickHouse 24.3 onwards — an empty password is rejected
       # unless explicitly permitted via a configuration file.
-      CLICKHOUSE_PASSWORD: lab_password
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
       # Set the timezone to UTC to ensure consistent timestamp handling across services.
       TZ: ${TZ_NAIROBI}
       CLICKHOUSE_TIMEZONE: ${TZ_NAIROBI}
@@ -278,11 +282,11 @@ services:
       # timezone.xml is a more authoritative way to set the ClickHouse server timezone.
       - ./clickhouse/config.d/timezone.xml:/etc/clickhouse-server/config.d/timezone.xml:ro
     healthcheck:
-      test: [ "CMD", "clickhouse-client", "--password", "lab_password", "--query", "SELECT 1" ]
+      test: [ "CMD-SHELL", "clickhouse-client --password $$CLICKHOUSE_PASSWORD --query 'SELECT 1'" ]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 60s
 
   # ---------------------------------------------------------------------------
   # PRODUCER SERVICE LOCATED IN LAGOS, NIGERIA (WAT = UTC+1)
@@ -298,6 +302,12 @@ services:
       BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092,kafka3:9092
       TZ: ${TZ_LAGOS}
       TIMEZONE: ${TZ_LAGOS}
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f producer_order.py > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 130s
     depends_on:
       kafka1:
         condition: service_healthy
@@ -317,6 +327,12 @@ services:
       BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092,kafka3:9092
       TZ: ${TZ_LAGOS}
       TIMEZONE: ${TZ_LAGOS}
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f consumer_order_notification.py > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 130s
     depends_on:
       kafka1:
         condition: service_healthy
@@ -334,10 +350,16 @@ services:
       dockerfile: Dockerfile.consumer-inventory
     environment:
       BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092,kafka3:9092
-      DATABASE_URL: postgresql://lab_user:lab_password@postgres:5432/lab_db
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       # Set the timezone to UTC to ensure consistent timestamp handling across services.
       TZ: ${TZ_LAGOS}
       TIMEZONE: ${TZ_LAGOS}
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f consumer_order_inventory.py > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 130s
     depends_on:
       kafka1:
         condition: service_healthy
@@ -369,7 +391,7 @@ services:
       BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092,kafka3:9092
       CLICKHOUSE_HOST: clickhouse
       CLICKHOUSE_PORT: 8123
-      CLICKHOUSE_PASSWORD: lab_password
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
       # Set the timezone to UTC to ensure consistent timestamp handling across services.
       TZ: ${TZ_NAIROBI}
       TIMEZONE: ${TZ_NAIROBI}
@@ -378,6 +400,12 @@ services:
       # This tells the transformer what timezone those naive values actually
       # represent so it can correct the conversion to Nairobi time.
       SOURCE_TIMEZONE: ${TZ_LAGOS}
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f transformer.py > /dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 130s
     depends_on:
       kafka1:
         condition: service_healthy

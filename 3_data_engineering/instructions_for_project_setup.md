@@ -37,6 +37,27 @@ never knows CDC is running.
 This is how large-scale data pipelines are built in practice: **you
 capture changes at the database level, not at the application level.**
 
+#### Write Ahead Log (WAL)
+
+The Write-Ahead Log is PostgreSQL's **durability mechanism**. Every change to data — every `INSERT`, `UPDATE`, `DELETE` — is written to the WAL **before** it is written to the actual data files. 
+
+This serves two purposes:
+
+1. **Crash recovery** — if the server dies mid-write, the WAL is replayed on restart
+2. **Replication** — other systems can consume the WAL to replicate or, in this case, stream changes.
+
+The `wal_level` setting controls how much information is written into each WAL record.
+
+| Level     | What It Records                                    | Use Case                                 |
+|-----------|----------------------------------------------------|------------------------------------------|
+| `minimal` | Bare minimum for crash recovery                    | Standalone, no replication               |
+| `replica` | Enough for physical/streaming replication          | Read replicas                            |
+| `logical` | Full row-level change detail, including old values | Change Data Capture, logical replication |
+
+Enabling `wal_level=logical` increases the WAL size — PostgreSQL ends up writing more data per transaction. This has a significant storage and I/O cost in a production environment.
+
+The traditional safeguard is to set `max_slot_wal_keep_size` in PostgreSQL >=13. This caps how much WAL is retained per slot and drops the slot rather than filling the disk. If Debezium goes offline and PostgreSQL starts accumulating unread WAL logs beyond 6GB, PostgreSQL will protect itself by **invalidating the slot** rather than filling your disk and crashing.
+
 ### Debezium
 
 Debezium is a CDC platform that runs as a **Kafka Connect** plugin.
@@ -155,14 +176,22 @@ pytest -v -s test_consumer_order_inventory.py
 cd ..
 ```
 
-### Step 2: Set Up Directories and Start the Stack
+### Step 2: Create the `.env` File
+
+Create a file called `.env` inside the `3_data_engineering` directory and paste the contents of the `.env.example` file inside it.
+
+Set the values of the environment variables as discussed in class.
+
+### Step 3: Set Up Directories and Start the Stack
 
 ```bash
 # Create the required volume directories
 chmod u+x project_setup.sh
 sed -i.bak 's/\r$//' project_setup.sh
 ./project_setup.sh
+```
 
+```bash
 # Build all images and start all services
 docker compose -f docker-compose.yaml up --build \
   --scale producer=1 \
@@ -187,19 +216,14 @@ You can check their status with:
 docker-compose ps
 ```
 
-All services should show `healthy` or `running`. The Kafka Connect
-container (`kafka-connect`) takes approximately 60 seconds to fully
-initialize. Wait until it is in a `healthy` status before moving to Step 2.
-
-You can start a container manually by running `docker start <container-name>`
-or clicking the "Start" button in the Docker Desktop UI in case it is not
-running.
+All the containers should be in a `healthy` status after a few minutes. If any container is not healthy, check its logs to debug the issue.
 
 ---
 
-### Step 3: Verify the Stack is Healthy
+### Step 4: Verify the Stack is Healthy
 
 **Check that Kafka brokers are up:**
+
 ```bash
 docker exec kafka1 kafka-topics \
   --bootstrap-server localhost:9092 \
@@ -222,22 +246,25 @@ If you receive a connection error, wait 30 more seconds and try again.
 
 ---
 
-### Step 4: Register the Debezium Connector
+### Step 5: Register the Debezium Connector
 
 This is the step that **activates CDC**. You are basically telling Debezium 
 which database and table to monitor.
 
 The documentation of the connector configuration is available [here](kafka-connect/connector-config.json_documented_version.md).
 
+**NOTE:** This should be executed from inside the `3_data_engineering/
+` directory:
+
 ```bash
-cd 3_data_engineering/
 chmod u+x kafka-connect/register-connector.sh
-sed -i 's/\r$//' register-connector.sh
+sed -i 's/\r$//' kafka-connect/register-connector.sh
 ./kafka-connect/register-connector.sh
 ```
 
 Expected output:
-```
+```text
+Script directory = ./kafka-connect
 Waiting for Kafka Connect to be ready...
 Kafka Connect is ready.
 
@@ -270,7 +297,7 @@ The `state` field should show `RUNNING`.
 
 ---
 
-### Step 5: Verify the Debezium Topic Exists
+### Step 6: Verify the Debezium Topic Exists
 
 Once the connector is registered, Debezium creates a new Kafka topic
 named `dbserver1.public.orders` and immediately begins publishing
@@ -301,7 +328,7 @@ that `transformer.py` receives and processes.
 
 ---
 
-### Step 6: Verify Data is Arriving in ClickHouse
+### Step 7: Verify Data is Arriving in ClickHouse
 
 The transformer service is already running as a Docker container. Check
 its logs to see it consuming CDC events and writing to ClickHouse:
@@ -348,7 +375,7 @@ exit;
 
 ---
 
-### Step 6: Observe the Live Pipeline
+### Step 8: Observe the Live Pipeline
 
 At this point the full pipeline is running continuously. Open connections
 to PostgreSQL and ClickHouse using DataGrip or any SQL client of your choice to
@@ -403,7 +430,7 @@ will be set automatically based on the quantity.
 
 ---
 
-### Step 7: Observe CDC Operations (INSERT, UPDATE, DELETE)
+### Step 9: Observe CDC Operations (INSERT, UPDATE, DELETE)
 
 The producer only inserts new orders. To observe UPDATE and DELETE
 events flowing through the pipeline, run these commands manually.
@@ -436,7 +463,7 @@ when the source database removes it.
 
 ---
 
-### Step 8: Tear Down (Project Cleanup)
+### Step 10: Tear Down (Project Cleanup)
 
 ```bash
 # Stop all services AND delete all stored data

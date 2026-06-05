@@ -126,12 +126,17 @@ pacman::p_load("tidyverse")
 pacman::p_load("scales")
 pacman::p_load("bench")
 
+pacman::p_load("dotenv")
+# Create the .env file using the same .env.example file from Part 3 of the lab
+# Place it in the same folder where this .R file is
+dotenv::load_dot_env(file = ".env")
+
 ch_conn <- DBI::dbConnect(
   odbc::odbc(),
   driver   = "ClickHouse ODBC Driver (Unicode)",
   Url      = "http://localhost:8123/",
   Username = "default",
-  Password = "lab_password",
+  Password = Sys.getenv("CLICKHOUSE_PASSWORD"),
   Database = "default"
 )
 
@@ -141,10 +146,11 @@ pg_conn <- DBI::dbConnect(
   RPostgres::Postgres(),
   host     = "localhost",
   port     = 5432L,
-  dbname   = "lab_db",
-  user     = "lab_user",
-  password = "lab_password"
+  dbname   = Sys.getenv("POSTGRES_DB"),
+  user     = Sys.getenv("POSTGRES_USER"),
+  password = Sys.getenv("POSTGRES_PASSWORD")
 )
+
 
 cat("✅ Connected to PostgreSQL.\n")
 ```

@@ -18,6 +18,7 @@
 #
 # USAGE:
 #   pip install psycopg2-binary clickhouse-connect faker
+#   pip install python-dotenv
 #   python generate_data.py
 # =============================================================================
 
@@ -28,6 +29,11 @@ from zoneinfo import ZoneInfo
 import psycopg2
 import clickhouse_connect
 
+import os
+from dotenv import load_dotenv
+
+# Load variables from .env file
+load_dotenv()
 # -----------------------------------------------------------------------------
 # CONFIGURATION
 # -----------------------------------------------------------------------------
@@ -35,16 +41,16 @@ import clickhouse_connect
 POSTGRES_CONFIG = {
     "host":     "localhost",
     "port":     5432,
-    "dbname":   "lab_db",
-    "user":     "lab_user",
-    "password": "lab_password"
+    "dbname":   os.getenv("POSTGRES_DB"),
+    "user":     os.getenv("POSTGRES_USER"),
+    "password": os.getenv("POSTGRES_PASSWORD")
 }
 
 CLICKHOUSE_CONFIG = {
     "host":     "localhost",
     "port":     8123,
     "username": "default",
-    "password": "lab_password",
+    "password": os.getenv("CLICKHOUSE_PASSWORD"),
     "database": "default"
 }
 

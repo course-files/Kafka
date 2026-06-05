@@ -5,9 +5,9 @@
 
     "database.hostname": "postgres",
     "database.port": "5432",
-    "database.user": "lab_user",
-    "database.password": "lab_password",
-    "database.dbname": "lab_db",
+    "database.user": "${POSTGRES_USER}",
+    "database.password": "${POSTGRES_PASSWORD}",
+    "database.dbname": "${POSTGRES_DB}",
 
     "topic.prefix": "dbserver1",
 

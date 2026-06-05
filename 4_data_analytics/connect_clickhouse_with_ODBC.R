@@ -10,18 +10,24 @@
 # PREREQUISITES:
 #   1. The stack of containers from Part 3 must be running (docker-compose up -d)
 #   2. The benchmark data generator must have completed (python generate_data.py)
+#   3. You should be in the "4_data_analytics" as your working directory
+setwd("./4_data_analytics")
+# Confirm the working directory you are in:
+getwd()
 #   3. The following R packages must be installed:
 #
-     install.packages(c(
-     "DBI",          # Standard R database interface
-     "RPostgres",    # PostgreSQL driver
-     # "clickhouse",   # ClickHouse driver (uses HTTP interface on port 8123)
-     "odbc",          # ODBC interface for ClickHouse (uses HTTP interface on port 8123)
-     "tidyverse",    # Data manipulation and ggplot2 visualisation
-     "scales",       # Axis formatting helpers for ggplot2
-     "knitr",        # R Notebook rendering
-     "bench"         # Precise benchmarking with statistical summaries
-     ))
+install.packages(c(
+  "DBI",          # Standard R database interface
+  "RPostgres",    # PostgreSQL driver
+  # "clickhouse",   # ClickHouse driver (uses HTTP interface on port 8123)
+  "odbc",          # ODBC interface for ClickHouse (uses HTTP interface on port 8123)
+  "tidyverse",    # Data manipulation and ggplot2 visualisation
+  "scales",       # Axis formatting helpers for ggplot2
+  "knitr",        # R Notebook rendering
+  "bench",         # Precise benchmarking with statistical summaries
+  "dotenv"         # To avoid typing passwords in plaintext
+))
+
 #
 # NOTE:
 #   ClickHouse access is done through ODBC. The ClickHouse ODBC driver
@@ -38,8 +44,13 @@ library(odbc)
 library(tidyverse)
 library(scales)
 library(bench)
+library(dotenv)
 
 cat("All libraries loaded successfully.\n")
+
+# Create the .env file using the same .env.example file from Part 3 of the lab
+# Place it in the same folder where this .R file is
+dotenv::load_dot_env(file = ".env")
 
 # -----------------------------------------------------------------------------
 # STEP 2: Check that a ClickHouse ODBC driver is available
@@ -72,7 +83,7 @@ ch_conn <- DBI::dbConnect(
   driver   = "ClickHouse ODBC Driver (Unicode)",
   Url      = "http://localhost:8123/",
   Username = "default",
-  Password = "lab_password",
+  Password = Sys.getenv("CLICKHOUSE_PASSWORD"),
   Database = "default"
 )
 
@@ -105,9 +116,9 @@ pg_conn <- DBI::dbConnect(
   RPostgres::Postgres(),
   host     = "localhost",
   port     = 5432L,
-  dbname   = "lab_db",
-  user     = "lab_user",
-  password = "lab_password"
+  dbname   = Sys.getenv("POSTGRES_DB"),
+  user     = Sys.getenv("POSTGRES_USER"),
+  password = Sys.getenv("POSTGRES_PASSWORD")
 )
 
 cat("Connected to PostgreSQL.\n")
