@@ -251,7 +251,7 @@ If you receive a connection error, wait 30 more seconds and try again.
 This is the step that **activates CDC**. You are basically telling Debezium 
 which database and table to monitor.
 
-The documentation of the connector configuration is available [here](kafka-connect/connector-config.json_documented_version.md).
+**Important:** An explanation of cURL is available [here](curl_explanation.md) and the documentation of the connector configuration being sent as JSON data via HTTP POST using cURL is available [here](kafka-connect/connector-config.json_documented_version.md).
 
 **NOTE:** This should be executed from inside the `3_data_engineering/
 ` directory:
