@@ -1,5 +1,10 @@
 JSON does not support comments. The following is a commented version of the connector configuration for educational purposes. In practice, you would remove the comments before using this JSON in Kafka Connect.
 
+Additional documentation is available here depending on the chosen source/sink connector:
+
+* Confluent: https://www.confluent.io/hub/
+* Debezium: https://debezium.io/documentation/reference/nightly/connectors/index.html
+
 ```json
 {
   // Logical name of the connector within Kafka Connect.
