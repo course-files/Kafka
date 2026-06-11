@@ -44,7 +44,7 @@ analytical queries.
 │   ├── 0_instructions_for_project_setup.md
 │   ├── 1_instructions_for_python_installation.md
 │   └── 2_instructions_for_project_cleanup.md
-├── 1_kafka_fundamentals                    ← This is Part 1 of the lab.
+├── 1_kafka_fundamentals                         ← This is Part 1 of the lab.
 │   ├── consumer_order_inventory.py
 │   ├── consumer_order_notification.py
 │   ├── docker-compose.yaml
@@ -57,7 +57,7 @@ analytical queries.
 │   ├── test_consumer_order_inventory.py
 │   ├── test_consumer_order_notification.py
 │   └── test_producer_order.py
-├── 2_containerized_microservices           ← This is Part 2 of the lab.
+├── 2_containerized_microservices                ← This is Part 2 of the lab.
 │   ├── consumer-inventory
 │   │   ├── Dockerfile.consumer-inventory
 │   │   ├── consumer_order_inventory.py
@@ -80,7 +80,7 @@ analytical queries.
 │   │   └── test_producer_order.py
 │   ├── project_cleanup.sh
 │   └── project_setup.sh
-├── 3_data_engineering                      ← This is Part 3 of the lab.
+├── 3_data_engineering                           ← This is Part 3 of the lab.
 │   ├── clickhouse
 │   │   ├── config.d
 │   │   │   └── timezone.xml
@@ -96,6 +96,7 @@ analytical queries.
 │   │   ├── consumer_order_notification.py
 │   │   ├── requirements.txt
 │   │   └── test_consumer_order_notification.py
+│   ├── curl_explanation.md
 │   ├── database
 │   │   └── init.sql
 │   ├── docker-compose.yaml
@@ -115,7 +116,7 @@ analytical queries.
 │       ├── Dockerfile.transformer
 │       ├── requirements.txt
 │       └── transformer.py
-├── 4_data_analytics                        ← This is Part 4 of the lab.
+├── 4_data_analytics                             ← This is Part 4 of the lab.
 │   ├── connect_clickhouse_with_ODBC.R
 │   ├── generate_data.py
 │   ├── instructions_for_project_setup.md
@@ -124,7 +125,7 @@ analytical queries.
 │   └── lab4_analytics_with_odbc_quarto.qmd
 ├── Kafka.Rproj
 ├── LICENSE
-├── README.md                               ← This is the file you are reading.
+├── README.md                                    ← This is the file you are reading.
 ├── RecommendedCitation.bib
 ├── assets
 │   └── images
@@ -155,7 +156,7 @@ analytical queries.
     ├── dev.txt
     └── prod.txt
 
-21 directories, 94 files
+21 directories, 95 files
 ```
 
 ## Setup Instructions
