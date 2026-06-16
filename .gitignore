@@ -208,6 +208,7 @@ __marimo__/
 
 *.bak
 sandbox/
+sandbox_*/
 .venv
 .venv_*/
 1_kafka_fundamentals/container-volumes/
