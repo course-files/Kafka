@@ -44,7 +44,7 @@ analytical queries.
 │   ├── 0_instructions_for_project_setup.md
 │   ├── 1_instructions_for_python_installation.md
 │   └── 2_instructions_for_project_cleanup.md
-├── 1_kafka_fundamentals                         ← This is Part 1 of the lab.
+├── 1_kafka_fundamentals
 │   ├── consumer_order_inventory.py
 │   ├── consumer_order_notification.py
 │   ├── docker-compose.yaml
@@ -57,7 +57,7 @@ analytical queries.
 │   ├── test_consumer_order_inventory.py
 │   ├── test_consumer_order_notification.py
 │   └── test_producer_order.py
-├── 2_containerized_microservices                ← This is Part 2 of the lab.
+├── 2_containerized_microservices
 │   ├── consumer-inventory
 │   │   ├── Dockerfile.consumer-inventory
 │   │   ├── consumer_order_inventory.py
@@ -80,7 +80,7 @@ analytical queries.
 │   │   └── test_producer_order.py
 │   ├── project_cleanup.sh
 │   └── project_setup.sh
-├── 3_data_engineering                           ← This is Part 3 of the lab.
+├── 3_data_engineering
 │   ├── clickhouse
 │   │   ├── config.d
 │   │   │   └── timezone.xml
@@ -116,7 +116,7 @@ analytical queries.
 │       ├── Dockerfile.transformer
 │       ├── requirements.txt
 │       └── transformer.py
-├── 4_data_analytics                             ← This is Part 4 of the lab.
+├── 4_data_analytics
 │   ├── connect_clickhouse_with_ODBC.R
 │   ├── generate_data.py
 │   ├── instructions_for_project_setup.md
@@ -125,7 +125,7 @@ analytical queries.
 │   └── lab4_analytics_with_odbc_quarto.qmd
 ├── Kafka.Rproj
 ├── LICENSE
-├── README.md                                    ← This is the file you are reading.
+├── README.md
 ├── RecommendedCitation.bib
 ├── assets
 │   └── images
@@ -146,6 +146,7 @@ analytical queries.
 │       ├── SystemArchitecture.png
 │       └── TheUntoldStoryofR.png
 ├── lab_submission_instructions.md
+├── mysandbox
 ├── project_cleanup.sh
 └── requirements
     ├── base.txt
@@ -156,7 +157,7 @@ analytical queries.
     ├── dev.txt
     └── prod.txt
 
-21 directories, 95 files
+22 directories, 95 files
 ```
 
 ## Setup Instructions
