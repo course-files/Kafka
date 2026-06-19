@@ -104,18 +104,13 @@ all Operating Systems.
 
 ## Step 3: Install ClickHouse ODBC Driver
 
-Download from the official source:
-
-<https://clickhouse.com/docs/en/interfaces/odbc>
-
+Download from the official source: [https://clickhouse.com/docs/en/interfaces/odbc](https://clickhouse.com/docs/en/interfaces/odbc)
 
 This leads to [https://github.com/ClickHouse/clickhouse-odbc/releases/tag/v1.5.3.20260311](https://github.com/ClickHouse/clickhouse-odbc/releases/tag/v1.5.3.20260311).
 
-The exact version used in this lab is **clickhouse-odbc version 1.5.3.20260311 for use with PowerBI**.
-
-* For Windows download the `clickhouse-odbc-1.5.3.20260311-powerbi-win64.msi` file.
+* For Windows download the `clickhouse-odbc-1.5.3.20260311-win64.msi` file and the `clickhouse-odbc-1.5.3.20260311-powerbi-win64.msi` file as well.
 * For Linux download the `clickhouse-odbc-linux-Clang-UnixODBC-Release.zip` file.
-* For macOS download the `clickhouse-odbc-macos-AppleClang-UnixODBC-Release.zip ` file.
+* For MacOS download the `clickhouse-odbc-macos-AppleClang-UnixODBC-Release.zip` file.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 title: "Lab 2 — Part 4: Data Analytics with R and ClickHouse"
-subtitle: "From Data Pipeline to Business Insights — v1.0.0"
+subtitle: "From Data Pipeline to Business Insights — v1.1.0"
 author: "Allan Omondi"
 date: today
 date-format: "DD MMMM YYYY"
@@ -67,10 +67,10 @@ built exists because analytical queries do not belong in the operational data
 store (ACID-compliant relational databases designed to support database
 transactions).** By the end of this notebook, you will:
 
-1.  **Measure** the performance difference between executing an analytical query
-    in an operational data store (relational \[object relational\] PostgreSQL
-    database) versus in an analytical data store (ClickHouse non-relational
-    \[column-oriented\] data warehouse).
+- **Measure** the performance difference between executing an analytical query
+  in an operational data store (relational \[object relational\] PostgreSQL
+  database) versus in an analytical data store (ClickHouse non-relational
+  \[column-oriented\] data warehouse).
 
 --------------------------------------------------------------------------------
 
@@ -78,8 +78,8 @@ transactions).** By the end of this notebook, you will:
 
 ```{r setup_chunk}
 #| echo: false
-#| message: true
-#| warning: true
+#| message: false
+#| warning: false
 
 knitr::opts_chunk$set(echo = TRUE)
 # `installed.packages()` retrieves a matrix of all installed packages
@@ -91,6 +91,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # as a symbol
 # `dependencies = TRUE` instructs R to install not only the specified package but
 # also its dependencies
+
 # `pacman::p_load("here")` installs the package called "here". This package is used
 # in the next line.
 # `knitr::opts_knit$set(root.dir = here::here())` is used to ensure that the "knitr"
@@ -104,21 +105,26 @@ if (!"pacman" %in% installed.packages()[, "Package"]) {
 
 pacman::p_load("here")
 
-knitr::opts_knit$set(root.dir = here::here())
+# knitr::opts_knit$set(root.dir = here::here())
+knitr::opts_knit$set(root.dir = normalizePath("."))
+
+cat("Current working directory:", getwd(), "\n")
+list.files(".")
 ```
 
-We start by connecting to both PostgreSQL and ClickHouse using the `RPostgres`
-package and the ClickHouse ODBC driver. The output confirms that the connection
-is successful
+We start by connecting to both PostgreSQL and ClickHouse using the ODBC drivers.
+The output confirms that the connection is successful
 
 ```{r establish_connections}
 #| echo: false
 #| message: true
 #| warning: true
 
-# The code in this chunk is not displayed in the rendered output because of the
-# plaintext password.
+# For PDF conversion:
+# install.packages("tinytex", dependencies = TRUE)
+# tinytex::install_tinytex()
 
+pacman::p_load("Rcpp")
 pacman::p_load("DBI")
 pacman::p_load("RPostgres")
 pacman::p_load("odbc")
@@ -128,31 +134,45 @@ pacman::p_load("bench")
 
 pacman::p_load("dotenv")
 # Create the .env file using the same .env.example file from Part 3 of the lab
-# Place it in the same folder where this .R file is
+# Place it in the same folder where this file is located.
 dotenv::load_dot_env(file = ".env")
 
 ch_conn <- DBI::dbConnect(
+  # tells DBI which backend to use and how to translate DBI calls into database
+  # commands. `odbc::odbc()` returns that driver object for any ODBC-compliant
+  # data source.
   odbc::odbc(),
   driver   = "ClickHouse ODBC Driver (Unicode)",
-  Url      = "http://localhost:8123/",
-  Username = "default",
-  Password = Sys.getenv("CLICKHOUSE_PASSWORD"),
-  Database = "default"
+  server   = "localhost",
+  port     = 8123L,
+  database = "default",
+  uid      = "default",
+  pwd      = Sys.getenv("CLICKHOUSE_PASSWORD")
 )
-
-cat("✅ Connected to ClickHouse.\n")
 
 pg_conn <- DBI::dbConnect(
-  RPostgres::Postgres(),
-  host     = "localhost",
+  odbc::odbc(),
+  driver   = "PostgreSQL Unicode",
+  server   = "localhost",
   port     = 5432L,
-  dbname   = Sys.getenv("POSTGRES_DB"),
-  user     = Sys.getenv("POSTGRES_USER"),
-  password = Sys.getenv("POSTGRES_PASSWORD")
+  database = Sys.getenv("POSTGRES_DB"),
+  uid      = Sys.getenv("POSTGRES_USER"),
+  pwd      = Sys.getenv("POSTGRES_PASSWORD")
 )
 
+confirm_connection <- function(conn, label) {
+  alive <- DBI::dbIsValid(conn) &&
+    tryCatch({
+      DBI::dbGetQuery(conn, "SELECT 1")
+      TRUE
+    }, error = function(e) FALSE)
+  cat(sprintf("%s -> %s\n", label, if (alive) "connected and responsive ✅" else "NOT responding ❌"))
+  invisible(alive)
+}
 
-cat("✅ Connected to PostgreSQL.\n")
+confirm_connection(ch_conn, "ch_conn (ClickHouse)")
+confirm_connection(pg_conn, "pg_conn (PostgreSQL)")
+
 ```
 
 ```{r confirm_connections}
@@ -166,8 +186,8 @@ stopifnot(
 ch_count <- dbGetQuery(ch_conn, "SELECT COUNT(*) AS n FROM orders")$n
 pg_count <- dbGetQuery(pg_conn, "SELECT COUNT(*) AS n FROM orders")$n
 
-cat(sprintf("ClickHouse : %s rows\n", format(ch_count, big.mark = ",")))
-cat(sprintf("PostgreSQL : %s rows\n", format(pg_count, big.mark = ",")))
+cat(sprintf("ClickHouse : %s rows\n", format(as.numeric(ch_count), big.mark = ",")))
+cat(sprintf("PostgreSQL : %s rows\n", format(as.numeric(pg_count), big.mark = ",")))
 ```
 
 --------------------------------------------------------------------------------
@@ -247,6 +267,12 @@ overview$latest_order <- format(
 
 overview_t <- data.frame(
   Metric = names(overview),
+  # I() stands for "inhibit interpretation." It means "store this as-is,
+  # without simplification."
+  
+  # Without I(), data.frame() would try to expand as.list(overview[1, ]) — a list —
+  # into separate columns, one per element. I() tells data.frame() to treat the
+  # entire list as a single column where each cell holds one list element. 
   Value  = I(as.list(overview[1, ]))
 )
 
@@ -254,7 +280,7 @@ overview_t$Value <- sapply(overview_t$Value, function(x) {
   if (inherits(x, "POSIXct")) {
     format(x, "%Y-%m-%d %H:%M:%S %Z")
   } else if (is.numeric(x)) {
-    format(x, scientific = FALSE, big.mark = ",")
+    format(as.numeric(x), scientific = FALSE, big.mark = ",")
   } else {
     as.character(x)
   }
@@ -420,12 +446,19 @@ significantly larger orders than customers who place standard orders? Or is the
 - H₁: The mean order quantity for bulk orders is greater than for standard
   orders. (μ_bulk \> μ_standard)
 
-```{r ttest-bulk}
+```{r t-test-bulk}
 # Pull the raw quantities — we need individual records for the t-test
+# rand() % 10 = 0 filters rows stochastically
+
+# Analogy: imagine rolling a ten-sided die for every row. You keep the row only if
+# it lands on one specific face. Each row gets its own independent roll, so the
+# selection is random and spread across the entire table rather than concentrated at
+# the top.
 quantities <- dbGetQuery(ch_conn, "
   SELECT order_quantity, is_bulk_order
   FROM orders
   WHERE operation != 'DELETE'
+    AND rand() % 10 = 0   -- roughly 10% random sample
   LIMIT 200000
 ")
 
@@ -475,11 +508,11 @@ quantities %>%
   mutate(order_type = if_else(is_bulk_order == 1, "Bulk", "Standard"),
          order_type = factor(order_type, levels = c("Standard", "Bulk"))) %>%
   ggplot(aes(x = order_quantity, fill = order_type)) +
-  # When you use `geom_histogram(binwidth = 1)`, R centers the bins over the
+  # When we use `geom_histogram(binwidth = 1)`, R centers the bins over the
   # integers by default. This means:
     # The bin for a quantity of 5 actually covers the range from 4.5 to 5.5.
     # The bin for a quantity of 6 actually covers the range from 5.5 to 6.5.
-  # If we were to place your xintercept exactly at 5.0, the line would cut right
+  # If we were to place the xintercept exactly at 5.0, the line would cut right
   # through the middle of the "Standard" bin for 5 units.
   # By placing it at 5.5, we are drawing the line in the "no man's land" between
   # the bin for 5 and the bin for 6. This visually reinforces the logical boundary
@@ -530,8 +563,10 @@ contingency_data <- dbGetQuery(ch_conn, "
     SUM(CASE WHEN is_bulk_order = 0 THEN 1 ELSE 0 END) AS standard
   FROM orders
   WHERE operation != 'DELETE'
+    AND rand() % 30 = 0   -- roughly 30% random sample
   GROUP BY item
   ORDER BY item
+  LIMIT 200000
 ")
 
 # Explicitly cast to integer to clear the bit64 mapping issue common in ODBC
@@ -588,6 +623,13 @@ if (is.na(chi_result$p.value)) {
   ))
   cat("Item type and order type appear to be independent.\n")
   cat("In summary: The item choice does not seem to affect order size.\n")
+  cat("\nBoardroom-Ready Summary (plain language): Across our orders data,\n",
+      "the type of food ordered — whether Ugali, Managu, or any other item —\n",
+      "does not appear to influence whether a customer places a bulk or\n",
+      "standard order. In other words, large orders are just as likely\n",
+      "regardless of what is on the menu. Order size seems to be driven\n",
+      "by something other than the item itself, such as the customer type,\n",
+      "branch, or time of day.")
 }
 ```
 
@@ -595,7 +637,7 @@ if (is.na(chi_result$p.value)) {
 
 # The Performance Benchmark
 
-This is the central justification for the data pipeline you built. You will now
+This is the central justification for the data pipeline we built. We will now
 run the **same aggregation query** on PostgreSQL and on ClickHouse and measure
 the execution time of each.
 
@@ -653,10 +695,18 @@ state using the same amount of RAM compared to PostgreSQL.
 
 Run this in your terminal:
 
-`cd 3_data_engineering/docker restart postgres clickhouse && docker ps`
+`docker restart postgres clickhouse && docker ps`
 
 Wait until both PostgreSQL and ClickHouse are ready to receive connections. You
-can confirm that they are ready by connecting via DataGrip.
+can confirm that they are ready by connecting via DataGrip or using the client
+available in the each container, i.e.,
+
+For PostgreSQL:\
+`docker exec -it postgres psql -U lab_user -W -d lab_db`
+
+For ClickHouse:
+
+`docker exec -it clickhouse clickhouse-client`
 
 ## The Query
 
@@ -699,7 +749,7 @@ CH_QUERY <- "
     ORDER BY total_units DESC
 "
 
-cat("Both queries are defined and ready.\n")
+cat("Both queries are defined and ready to be executed.\n")
 cat("PostgreSQL query will scan:  ", format(pg_count, big.mark=","), " rows\n")
 cat("ClickHouse query will scan:  ", format(ch_count, big.mark=","), " rows\n")
 ```
@@ -724,12 +774,12 @@ invisible(dbGetQuery(pg_conn, "SELECT 1"))
 invisible(dbGetQuery(ch_conn, "SELECT 1"))
 
 cat("Running benchmark — this may take 1 to 2 minutes...\n")
-cat("Each query runs", 10, "times. Median time is reported.\n\n")
+cat("Each query runs", 15, "times. Median time is reported.\n\n")
 
 benchmark_results <- bench::mark(
   PostgreSQL  = dbGetQuery(pg_conn, PG_QUERY),
   ClickHouse  = dbGetQuery(ch_conn, CH_QUERY),
-  iterations  = 10,
+  iterations  = 15,
   check       = FALSE
 )
 
@@ -795,7 +845,7 @@ ggplot(bench_df,
     x        = NULL,
     y        = "Median Execution Time (seconds)",
     caption  = paste(
-      "Benchmark: 10 iterations, using `bench::mark()`",
+      "Benchmark: 15 iterations, using `bench::mark()`",
       sprintf("| %s rows",
               format(as.numeric(max(pg_count, ch_count)), big.mark = ","))
     )
@@ -812,7 +862,7 @@ ggplot(bench_df,
 
 Both queries return a similar business answer — only via different paths.
 
-```{r benchmark-results-table}
+```{r benchmark-results-table-from-PostgreSQL}
 pg_result <- dbGetQuery(pg_conn, PG_QUERY)
 ch_result <- dbGetQuery(ch_conn, CH_QUERY)
 
@@ -825,7 +875,7 @@ knitr::kable(
 )
 ```
 
-```{r}
+```{r benchmark-results-table-from-ClickHouse}
 knitr::kable(
   ch_result,
   caption   = "Aggregation Result from ClickHouse",
@@ -873,7 +923,7 @@ One of the audit fields the transformer added (feature engineering) is
 message and wrote the record to ClickHouse. The gap between `received_at` and
 `processed_at` is the end-to-end pipeline latency.
 
-```{r latency}
+```{r latency-raw}
 latency_data <- dbGetQuery(ch_conn, "
   SELECT
     item,
@@ -971,4 +1021,6 @@ dbDisconnect(ch_conn)
 dbDisconnect(pg_conn)
 
 cat("✅ Both connections closed.\n")
+confirm_connection(ch_conn, "ch_conn (ClickHouse)")
+confirm_connection(pg_conn, "pg_conn (PostgreSQL)")
 ```
