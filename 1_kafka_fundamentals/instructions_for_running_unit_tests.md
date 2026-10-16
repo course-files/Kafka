@@ -13,6 +13,7 @@ Think of unit tests like this:
 
 > You are baking bread. Instead of waiting until the entire loaf is done to
 > find out if it tastes right, you test each ingredient separately:
+>
 > - Does the flour weigh the right amount?
 > - Is the yeast still active?
 > - Is the water the right temperature?
@@ -43,6 +44,7 @@ PyTest is a Python testing framework. It finds your test files automatically
 and runs all your test functions, reporting which ones passed and which failed.
 
 A test function in PyTest:
+
 - Must start with the word `test_`
 - Uses `assert` statements to check whether something is true
 - Lives in a file that starts with `test_`
@@ -63,29 +65,15 @@ which line failed and what the actual value was.
 
 ---
 
-## Directory Structure
-
-```
-tests/
-├── README.md            ← You are reading this
-├── conftest.py          ← Shared test fixtures (setup code reused across tests)
-├── test_lab1.py         ← Tests for Lab 1 (Kafka Fundamentals)
-├── test_lab2.py         ← Tests for Lab 2 (Containerised Microservices)
-├── test_lab3.py         ← Tests for Lab 3 (CDC Data Pipeline)
-└── test_lab4.py         ← Tests for Lab 4 (Data Analytics)
-```
-
----
-
 ## How to Run the Tests
 
-### Step 1 — Install PyTest
+### Step 1: Install PyTest
 
 ```bash
 pip install pytest
 ```
 
-### Step 2 — Run all tests
+### Step 2: Run all tests
 
 ```bash
 # From the tests/ directory
@@ -98,19 +86,16 @@ pytest -v
 pytest -v -s
 ```
 
-### Step 3 — Run tests for one lab only
+### Step 3: Run tests for one lab only
 
 ```bash
-pytest test_producer_order_old.py -v
-pytest test_lab2.py -v
-pytest test_lab3.py -v
-pytest test_lab4.py -v
+pytest test_producer_order.py -v -s
 ```
 
-### Step 4 — Run a single test function
+### Step 4: Run a single test function
 
 ```bash
-pytest test_lab3.py::test_bulk_order_flag_is_set_when_quantity_exceeds_five -v
+pytest test_producer_order.py::test_delivery_report_success -v -s
 ```
 
 ---
@@ -118,16 +103,19 @@ pytest test_lab3.py::test_bulk_order_flag_is_set_when_quantity_exceeds_five -v
 ## Reading the Test Output
 
 When all tests pass:
-```
-=================== 12 passed in 0.45s ===================
+
+```text
+=================== 7 passed in 0.19s ===================
 ```
 
 When a test fails:
-```
+
+```text
 FAILED test_lab3.py::test_bulk_order_flag - AssertionError: assert 0 == 1
 ```
 
 PyTest shows you:
+
 - Which test failed
 - Which line the failure occurred on
 - What the actual value was vs what you expected
@@ -139,8 +127,8 @@ PyTest shows you:
 | Term | Meaning |
 |------|---------|
 | **Test function** | A function starting with `test_` that checks one behaviour |
-| **Assertion** | An `assert` statement — the actual check |
-| **Fixture** | Shared setup code that multiple tests can reuse (in conftest.py) |
-| **Pass** | The assertion was True — the code works as expected |
-| **Fail** | The assertion was False — the code has a bug |
+| **Assertion** | An `assert` statement: the actual check |
+| **Fixture** | Shared setup code that multiple tests can reuse (in `conftest.py`) |
+| **Pass** | The assertion was True: the code works as expected |
+| **Fail** | The assertion was False: the code has a bug |
 | **Test suite** | The full collection of all your tests |

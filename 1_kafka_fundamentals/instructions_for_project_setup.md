@@ -1,12 +1,12 @@
 # Part 1: Kafka Fundamentals
 
-Part 1 of the lab is used to learn about Kafka. It simulates part of an order 
-system for a restaurant. There is a producer service that sends orders to Kafka, 
-and two consumers that consume the orders. One consumer is responsible for 
-sending notifications to the customers, while the other consumer is responsible 
+Part 1 of the lab is used to learn about Kafka. It simulates part of an order  
+system for a restaurant. There is a producer service that sends orders to Kafka,  
+and two consumers that consume the orders. One consumer is responsible for  
+sending notifications to the customers, while the other consumer is responsible  
 for updating the inventory.
 
-Navigate into the Part 1 directory (`1_kafka_fundamentals`) first. All the 
+Navigate into the Part 1 directory (`1_kafka_fundamentals`) first. All the  
 commands below assume that you are inside the `1_kafka_fundamentals` directory.
 
 ```bash
@@ -14,6 +14,7 @@ cd 1_kafka_fundamentals/
 ```
 
 ## Step 1: Install the Dependencies
+
 Then install the dependencies.
 
 ```bash
