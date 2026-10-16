@@ -228,6 +228,18 @@ dependencies isolated from the system Python packages.
    pip list
    ```
 
+7. Ensure that all shell scripts have the correct line endings and are executable:
+
+    ```bash
+    find . -type f -name "*.sh" -not -path "./.git/*" -exec sed -i 's/\r$//' {} + -exec chmod u+x {} +
+    ```
+
+   - `find .` searches the current folder and every subfolder at all depths.
+   - `-type f -name "*.sh"` matches regular files ending in .sh.
+   - `-not -path "./.git/*"` skips Git’s internal directory.
+   - `-exec ... {} +` passes the matched files to sed, then to chmod, in batches.
+    It handles paths containing spaces correctly.
+
 ---
 
 ## Project Creation Instructions
