@@ -76,19 +76,43 @@ transactions).** By the end of this notebook, you will:
 
 # Setup: Load Libraries and Connect
 
-```{r setup_chunk}
+```{r knitr_setup}
 #| echo: false
 #| message: false
 #| warning: false
 
+# `knitr::opts_chunk$set()` is used to set the default options for code chunks
+# in a Quarto document.
+
+# The `echo = TRUE` option means that, by default, the code will be displayed in
+# the output document when it is rendered. This allows readers to see the code
+# that was used to generate the results, which can be helpful for understanding
+# how the analysis was performed and for reproducing the results.
+
+# `#| echo: false` can be used to override the default options for a specific
+# code chunk. This would imply that the code in that chunk will not be displayed
+# in the output document when it is rendered. This can be useful for hiding code
+# that is not relevant to the reader or for keeping the output document clean
+# and focused on the results.
+
 knitr::opts_chunk$set(echo = TRUE)
+
+# `normalizePath(".")` returns the absolute path of the current working
+# directory. This can be useful for ensuring that the code is running in the
+# correct directory and can find the files it requires.
+
+knitr::opts_knit$set(root.dir = normalizePath("."))
+
+# cat("Current working directory:", getwd(), "\n")
+# list.files(".")
+```
+
+```{r install_dependencies}
 # `installed.packages()` retrieves a matrix of all installed packages
 # `[, "Package"]` extracts on the "Package" column from the matrix of all
-# packages
+# packages. This contains the name of the package.
 # The %in% operator is used to test if the specified package is in the matrix of
 # all packages
-# `character.only = TRUE` ensures that the quoted name of the package is not treated
-# as a symbol
 # `dependencies = TRUE` instructs R to install not only the specified package but
 # also its dependencies
 
@@ -98,41 +122,52 @@ knitr::opts_chunk$set(echo = TRUE)
 # utility in R knows where to find the files required to create the HTML, Word, or
 # PDF version of the notebook.
 
+
 if (!"pacman" %in% installed.packages()[, "Package"]) {
   install.packages("pacman", dependencies = TRUE)
-  library("pacman", character.only = TRUE)
+  library("pacman")
 }
 
-pacman::p_load("here")
+# For PDF conversion:
+# install.packages("tinytex", dependencies = TRUE)
+# tinytex::install_tinytex()
 
-# knitr::opts_knit$set(root.dir = here::here())
-knitr::opts_knit$set(root.dir = normalizePath("."))
+# Integrates R and C++. Other packages depend on this.
+install.packages("Rcpp", dependencies = TRUE)
 
-cat("Current working directory:", getwd(), "\n")
-list.files(".")
+# Standard R database interface
+install.packages("DBI", dependencies = TRUE)
+
+# ODBC interface for ClickHouse (uses HTTP interface on port 8123)
+install.packages("odbc", dependencies = TRUE)
+
+# PostgreSQL driver
+install.packages("RPostgres", dependencies = TRUE)
+
+# To avoid typing passwords in plaintext
+install.packages("dotenv", dependencies = TRUE)
+
+# Data manipulation and ggplot2 visualisation
+install.packages("tidyverse", dependencies = TRUE)
+# Axis formatting helpers for ggplot2
+install.packages("scales", dependencies = TRUE)
+# R Notebook rendering
+install.packages("knitr", dependencies = TRUE)
+# Precise benchmarking with statistical summaries
+install.packages("bench", dependencies = TRUE)
 ```
 
 We start by connecting to both PostgreSQL and ClickHouse using the ODBC drivers.
-The output confirms that the connection is successful
+The output confirms that the connection is successful.
 
 ```{r establish_connections}
 #| echo: false
 #| message: true
 #| warning: true
 
-# For PDF conversion:
-# install.packages("tinytex", dependencies = TRUE)
-# tinytex::install_tinytex()
+# `#| echo: false` to avoid displaying the connection credentials in the
+# rendered document.
 
-pacman::p_load("Rcpp")
-pacman::p_load("DBI")
-pacman::p_load("RPostgres")
-pacman::p_load("odbc")
-pacman::p_load("tidyverse")
-pacman::p_load("scales")
-pacman::p_load("bench")
-
-pacman::p_load("dotenv")
 # Create the .env file using the same .env.example file from Part 3 of the lab
 # Place it in the same folder where this file is located.
 dotenv::load_dot_env(file = ".env")
@@ -172,10 +207,9 @@ confirm_connection <- function(conn, label) {
 
 confirm_connection(ch_conn, "ch_conn (ClickHouse)")
 confirm_connection(pg_conn, "pg_conn (PostgreSQL)")
-
 ```
 
-```{r confirm_connections}
+```{r confirm_number_of_observations}
 # These connections must already exist from the previous chunk.
 stopifnot(
   "ch_conn not found — run connect_clickhouse_with_ODBC.R first" = exists("ch_conn"),

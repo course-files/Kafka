@@ -20,7 +20,6 @@
 <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/postgresql/postgresql-original-wordmark.svg" width="40"/> 
 </p>
 
-
 ## System Architecture
 
 ![System Architecture](assets/images/SystemArchitecture.jpg)
@@ -38,6 +37,7 @@ analytical queries.
 ![ExpectedResults.png](assets/images/ExpectedResults.png)
 
 ## Repository Structure
+
 ```text
 .
 ├── 0_admin_instructions
