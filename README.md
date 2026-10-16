@@ -164,6 +164,12 @@ analytical queries.
 
 - [Setup Instructions](0_admin_instructions/0_instructions_for_project_setup.md)
 
+**Set Docker's memory limit.** Docker Desktop, *Settings*, *Resources*, *Memory*. Use **10 to 12 GB** on a 16 GB laptop.
+That should be about **75% of your laptop's RAM** instead of the default 50%.
+Click here for instructions on how to set Docker's memory limit: [set_docker_memory_limit.md](set_docker_memory_limit.md)
+
+**NOTE:** Close your browser tabs and other heavy applications while you run this lab.
+
 ## Lab Manual
 
 Refer to the files below, in the order specified, for more details:
