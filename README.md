@@ -164,9 +164,9 @@ analytical queries.
 
 - [Setup Instructions](0_admin_instructions/0_instructions_for_project_setup.md)
 
-**Set Docker's memory limit.** Docker Desktop, *Settings*, *Resources*, *Memory*. Use **10 to 12 GB** on a 16 GB laptop.
+**Set Docker's memory limit.** Docker Desktop → *Settings* → *Resources* → *Memory*. Use **10 to 12 GB** on a 16 GB laptop.
 That should be about **75% of your laptop's RAM** instead of the default 50%.
-Click here for instructions on how to set Docker's memory limit: [set_docker_memory_limit.md](set_docker_memory_limit.md)
+[Click here](0_admin_instructions/3_instructions_for_setting_docker_memory_limit.md) for instructions on how to set Docker's memory limit.
 
 **NOTE:** Close your browser tabs and other heavy applications while you run this lab.
 
@@ -174,10 +174,10 @@ Click here for instructions on how to set Docker's memory limit: [set_docker_mem
 
 Refer to the files below, in the order specified, for more details:
 
-1. [Part 1: Kafka Fundamentals](1_kafka_fundamentals/instructions_for_project_setup.md)
-2. [Part 2: Containerized Microservices](2_containerized_microservices/instructions_for_project_setup.md)
-3. [Part 3: Data Engineering using Kafka](3_data_engineering/instructions_for_project_setup.md)
-4. [Part 4: Data Analytics using R and ClickHouse](4_data_analytics/instructions_for_project_setup.md)
+1. [Part 1: Kafka Fundamentals](1_kafka_fundamentals/README.md)
+2. [Part 2: Containerized Microservices](2_containerized_microservices/README.md)
+3. [Part 3: Data Engineering using Kafka](3_data_engineering/README.md)
+4. [Part 4: Data Analytics using R and ClickHouse](4_data_analytics/README.md)
 
 ## Lab Submission Instructions
 
